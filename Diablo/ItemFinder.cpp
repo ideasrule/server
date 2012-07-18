@@ -121,6 +121,7 @@ using namespace std;
 		return false;
 	}
 
+<<<<<<< HEAD
 	vector<Point> ItemFinder::segregateY(vector<Point> original, int minDist) {
 		vector<Point> result;
 
@@ -134,6 +135,8 @@ using namespace std;
 		return result;
 	}
 
+=======
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 	vector<Point> ItemFinder::findTemp(Mat shot, Mat temp, double thres) {
 		Mat floatingPoint;
 		shot.convertTo(floatingPoint, CV_32FC3);
@@ -141,8 +144,11 @@ using namespace std;
 		Mat result;
 		//cout << "template matching started" << endl;
 		matchTemplate(floatingPoint, temp, result, CV_TM_CCOEFF_NORMED);
+<<<<<<< HEAD
 		//imshow("result", result);
 		//waitKey(0);
+=======
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 		//cout << "template matching ended" << endl;
 		//imshow("result", result);
 		//imwrite("invresult.png", 255*result);
@@ -158,8 +164,11 @@ using namespace std;
 			for (int c = 0; c < result.cols; c++) {
 				//cout << ptr[c] << endl;
 				if (ptr[c] > thres) {
+<<<<<<< HEAD
 					//cout << "I found a value of " << ptr[c] << endl;
 					//cout << "but my thres is " << thres << endl;
+=======
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 					int midMatchRow = r + temp.rows/2;
 					int midMatchCol = c + temp.cols/2;
 					locs.push_back(Point2i(midMatchCol, midMatchRow));
@@ -192,6 +201,12 @@ using namespace std;
 		//Mat filtered = applyLim(hsvIm, isBlueOrYellow);
 		Mat distances;
 		distanceTransform(binary, distances, CV_DIST_L2,  5);
+<<<<<<< HEAD
+=======
+	//	imwrite("distances2.png", distances);
+		//imshow("distances", binary);
+		//waitKey(0);
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 		Point* bestPoint = NULL;
 		int bestCount = 0;
 		for (int r = startRow; r < distances.rows; r++) {
@@ -244,6 +259,10 @@ using namespace std;
 		//waitKey(0);
 		double score = correlate(filtered, hateDepletedTemp);
 		//cout << score << enl;
+<<<<<<< HEAD
+=======
+		//return false;
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 		return (score > 0.8);
 	}
 	vector<Point> ItemFinder::findGold(Mat shot, double thres) {
@@ -256,18 +275,46 @@ using namespace std;
 		return score > 0.95;
 	}
 
+<<<<<<< HEAD
+=======
+	bool isSeen(Mat shot, int what) {
+		Mat region;
+		Mat temp;
+		switch(what) {
+		case 0:
+			temp = imread("changequest.png", CV_LOAD_IMAGE_COLOR);
+			region = shot(Rect(417, 314, temp.cols, temp.rows));
+			break;
+		case 1:
+			temp = imread("questselect.png", CV_LOAD_IMAGE_COLOR);
+			region = shot(Rect(229, 172, temp.cols, temp.rows));
+			break;
+
+		}
+		return false;
+	}
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 
 int main3(int argn, char** argv) {
 	ItemFinder finder;
 	
+<<<<<<< HEAD
 	Mat testim = imread("inv2.png", CV_LOAD_IMAGE_COLOR);
 	for (int r = 0; r < 6; r++) {
+=======
+	Mat testim = imread("items.png", CV_LOAD_IMAGE_COLOR);
+	/*for (int r = 0; r < 6; r++) {
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 		for (int c = 0; c < 10; c++) {
 			finder.invSpotEmpty(testim, r, c);
 			cout << " ";
 		}
 		cout << endl;
+<<<<<<< HEAD
 	}
+=======
+	}*/
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 	Point* p = finder.nextItem(testim);
 	if (p != NULL) {
 		cout << p->x << " " << p->y << endl;
@@ -318,4 +365,7 @@ int main3(int argn, char** argv) {
 	return 0;
 }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e

@@ -27,7 +27,10 @@ bool flag = false;
 	typedef long (WINAPI *clickPtr) (LPCWSTR, long, long, long, long nSpeed);
 	typedef long (WINAPI *setPtr) (LPCWSTR, long);
 	typedef void (WINAPI *sendPtr) (LPCWSTR, long);
+<<<<<<< HEAD
 	typedef void (WINAPI *mouseWheelPtr) (LPCWSTR szDirection, long nClicks);
+=======
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 
 	handlePtr WinGetHandle = (handlePtr) GetProcAddress(autoLib, "AU3_WinGetHandle");
 	waitPtr WinWaitActive = (waitPtr) GetProcAddress(autoLib, "AU3_WinWaitActive");
@@ -41,7 +44,10 @@ bool flag = false;
 	clickPtr MouseClick = (clickPtr) GetProcAddress(autoLib, "AU3_MouseClick");
 	setPtr AutoItSetOption = (setPtr) GetProcAddress(autoLib, "AU3_AutoItSetOption");
 	sendPtr Send = (sendPtr) GetProcAddress(autoLib, "AU3_Send");
+<<<<<<< HEAD
 	mouseWheelPtr MouseWheel = (mouseWheelPtr) GetProcAddress(autoLib, "AU3_MouseWheel");
+=======
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 class Bot {
 	//height and width of window, not including menubar or sides
 	static const int WIDTH = 1264;
@@ -93,7 +99,11 @@ public:
 		colorFreq = (int*) calloc(256*256*256, sizeof(int));
 		numUsed = 0;
 		isColorInDisc = (bool*) calloc(256*256*256, sizeof(bool));
+<<<<<<< HEAD
 	//	loadMask("color.txt");
+=======
+		loadMask("color.txt");
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 		healthTemp = imread("health_template.png",CV_LOAD_IMAGE_COLOR);
 		hatredTemp = imread("hatred_template.png", CV_LOAD_IMAGE_COLOR);
 		disciplineTemp = imread("discipline_template2.png", CV_LOAD_IMAGE_COLOR);
@@ -115,7 +125,73 @@ public:
 		currTime = clock()/CLOCKS_PER_SEC;
 	}
 
+<<<<<<< HEAD
 
+=======
+	void train(vector<int> colors) {
+	Mat data(colors.size(), 3, CV_32FC1);
+	Mat responses = Mat::zeros(colors.size(), 1, CV_32FC1);
+	cout<<"training"<<endl;
+	for (int i=0; i < colors.size(); i++) {
+		int val = colors[i];
+		int R = val & 0x0000FF;
+		int G = (val & 0x00FF00)>>8;
+		int B = (val & 0xFF0000)>>16;
+		float* row = data.ptr<float>(i);
+		row[0] = R;
+		row[1] = G;
+		row[2] = B;
+	}
+	Mat* test;
+	//CvKNearest abs(f);
+	//CvKNearest neighborFinder(test, test, NULL, false, 10);
+	finder.train(data, responses);
+	cout<<"training done"<<endl;
+	Vec3b testpixel(40,40,200);
+	predict(testpixel);
+	//finder.save("training.txt");
+	//CvKNearest::train(data, responses, NULL, _max_k = 10);
+}
+
+	double predict(Vec3b pixel) {
+		Mat sample(1, 3, CV_32FC1);
+		sample.at<float>(0, 0) = pixel[2];
+		sample.at<float>(0, 1) = pixel[1];
+		sample.at<float>(0, 2) = pixel[0];
+		Mat results;
+		float** neighbors = NULL;
+		Mat neighbor_responses;
+		Mat dist;
+		
+		finder.find_nearest(sample, 3, results, neighbor_responses, dist);
+		double dist1 = dist.at<float>(0, 0);
+		double dist2 = dist.at<float>(0, 1);
+		double dist3 = dist.at<float>(0, 2);
+		return (dist1 + dist2+dist3);
+		//cout << dist << endl;
+	}
+	void loadMask(string filename) {
+		vector<int> colors;
+		string line;
+		ifstream myfile (filename);
+		if (myfile.is_open())
+		{
+			while ( myfile.good() )
+			{
+				getline (myfile,line);
+				int val = stoi(line);
+				colors.push_back(val);
+				int R = val & 0x0000FF;
+				int G = (val & 0x00FF00)>>8;
+				int B = (val & 0xFF0000)>>16;
+				isColorInDisc[R*256*256 + G*256 + B] = true;
+				//cout << R << " "<<G<<" "<<B<<endl;
+			}
+		myfile.close();
+	  }
+		train(colors);
+	}
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 
 	void showDetectedLevel(Mat region, int row) {
 		assert(region.rows > row);
@@ -140,6 +216,11 @@ public:
 		double percentPastThresLast = 0;
 		int failingLines = 0;
 		for (int i = temp.rows - 1; i >= 0; i--) {
+<<<<<<< HEAD
+=======
+			//cout<<i<<" ";
+//			Vec3b* pr = hsvRegion.ptr<Vec3b>(i);
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 			Vec3b* pr = region.ptr<Vec3b>(i);
 			Vec3b* pt = temp.ptr<Vec3b>(i);
 			int nPastThres = 0;
@@ -157,6 +238,14 @@ public:
 				int freq = colorFreq[winHue*256*256 + winSat*256 + winVal];
 				if (freq == 0) numUsed++;
 				colorFreq[winHue*256*256 + winSat*256 + winVal]++;
+<<<<<<< HEAD
+=======
+			/*		
+				if (!colorUsed[winHue*256*256 + winSat*256 + winVal]) {
+					colorUsed[winHue*256*256 + winSat*256 + winVal] = true;
+					numUsed++;
+				}*/
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 				int hueDiff = abs(winHue - tempHue)%90;
 				int satDiff = abs(winSat - tempSat);
 				int valDiff = winVal - tempVal;
@@ -189,8 +278,126 @@ public:
 		return getLevel(region, hatredTemp, HATRED_THRES);
 	}
 
+<<<<<<< HEAD
 	double getDiscipline(Mat shot) {
 		Mat region(shot, Rect(DISCIPLINE_X, DISCIPLINE_Y, 
+=======
+	double leastDiff(Mat shot) {
+		/*Tries to detect discipline level by f = avgdiff(top) - avgdiff(bot)
+		for every row, where avgdiff is the average difference of valid pixels
+		in the portion of the image above or below the row. Fails miserably.*/
+		Mat region(shot, Rect(DISCIPLINE_X, DISCIPLINE_Y, 
+			disciplineTemp.cols, disciplineTemp.rows));
+		Mat hsvRegion;
+		cvtColor(region, hsvRegion, CV_BGR2HSV);
+		double* sumDiffs = new double[hsvRegion.rows];
+		int* nums = new int[hsvRegion.rows];
+		for (int r=0; r < hsvRegion.rows; r++) {
+			if (r != 0) {
+				sumDiffs[r] = sumDiffs[r-1];
+				nums[r] = nums[r-1];
+			}
+			else {
+				sumDiffs[0] = 0;
+				nums[0] = 0;
+			}
+			for (int c=0; c < hsvRegion.cols; c++) {
+				Vec3b tempVal = disciplineTemp.at<Vec3b>(r, c);
+				Vec3b val = region.at<Vec3b>(r, c);
+				if (tempVal[0]==0 && tempVal[1]==0 && tempVal[2]==0) continue;
+				nums[r]++;
+				double diff = abs(tempVal[2]-val[2]);
+				Vec3b zero = 0;
+				if (diff < 35) {
+					region.at<Vec3b>(r,c)[0] = 0;
+					region.at<Vec3b>(r,c)[1] = 0;
+					region.at<Vec3b>(r,c)[2] = 0;
+				}
+				sumDiffs[r] += diff;
+			}
+		}
+		int totNum = nums[hsvRegion.rows - 1];
+		int totSum = sumDiffs[hsvRegion.rows - 1];
+		double max = -1;
+		double maxRow = -1;
+		for (int r=0; r < hsvRegion.rows - 1; r++) {
+			double topAvgDiff = sumDiffs[r]/nums[r];
+			double topBotDiff = (totSum - sumDiffs[r])/(totNum - nums[r]);
+			cout << topAvgDiff - topBotDiff<<endl;
+			if (topAvgDiff - topBotDiff > max) {
+				max = topAvgDiff - topBotDiff;
+				maxRow = r;
+			}
+		}
+		showDetectedLevel(region, maxRow);
+		return maxRow;
+	}
+	
+	double getDiscipline(Mat shot) {
+		Mat region(shot, Rect(DISCIPLINE_X, DISCIPLINE_Y, 
+			disciplineTemp.cols, disciplineTemp.rows));
+
+		/*
+		for (int r=0; r < region.rows; r++) {
+			for (int c=0; c < region.cols; c++) {
+				Vec3b color = region.at<Vec3b>(r,c);
+
+				if (mask[color[2]*256*256 + color[1]*256 + color[0]]) {
+					//Vec3b color = region.at<Vec3b>(r,c);
+
+					region.at<Vec3b>(r,c)[0] = 0;
+					region.at<Vec3b>(r,c)[1] = 0;
+					region.at<Vec3b>(r,c)[2] = 0;
+				}
+			}
+		}
+		imshow("region", region);
+		waitKey(0);*/
+		Mat hsvRegion;
+		cvtColor(region, hsvRegion, CV_BGR2HSV);
+		return getLevel(region, disciplineTemp, DISCIPLINE_THRES);
+	}
+	double getDiscipline2(Mat shot) {
+		/*alternative way of getting the discipline.  I try to detect the
+		line by comparing pixels to BGR coordinates (221,144,91).*/
+		Mat region(shot, Rect(DISCIPLINE_X, DISCIPLINE_Y, 
+			disciplineTemp.cols, disciplineTemp.rows));
+		Mat hsvRegion;
+		cvtColor(region, hsvRegion, CV_BGR2HSV);
+		int refBlue = 221;
+		int refGreen = 144;
+		int refRed = 91;
+		for (int r=0; r < disciplineTemp.rows; r++) {
+			int nQualifying = 0;
+			int nMatchingTemp = 0;
+			int nTot = 0;
+			for (int c=0; c < disciplineTemp.cols; c++) {
+				Vec3b val = region.at<Vec3b>(r, c);
+				Vec3b hsvVal = hsvRegion.at<Vec3b>(r, c);
+				Vec3b tempVal = disciplineTemp.at<Vec3b>(r, c);
+				if (tempVal[0]==0 && tempVal[1]==0 && tempVal[2]==0) continue;
+				int diffB = abs(val[0]-refBlue);
+				int diffG = abs(val[1]-refGreen);
+				int diffR = abs(val[2]-refRed);
+				int diffH = abs(hsvVal[0] - tempVal[0])%90;
+				int diffS = abs(hsvVal[1] - tempVal[1]);
+				int diffV = abs(hsvVal[2] - tempVal[2]);
+				if (diffH < 7 && diffS < 60) nMatchingTemp++;
+				if (diffB < 50 && diffG < 30 && diffR < 30)
+					nQualifying++;
+				nTot++;
+			}
+			if ((double) nQualifying/nTot > 0.5 || (double) nMatchingTemp/nTot > 0.5) {
+				return 1 - (double) r/disciplineTemp.rows;
+			}
+		}
+
+		return 0;
+	}
+
+	double getDiscipline3(Mat shot) {
+		Mat region(shot, Rect(DISCIPLINE_X, DISCIPLINE_Y, 
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 				disciplineTemp.cols, disciplineTemp.rows));
 		for (int i = disciplineTemp.rows - 1; i >= 0; i--) {
 			Vec3b* pr = region.ptr<Vec3b>(i);
@@ -249,6 +456,15 @@ public:
 			memcpy(dst, src, 3*source.Width);
 		}
 		shotBitmap.UnlockBits(&source);
+<<<<<<< HEAD
+=======
+		//double disc = getDiscipline3(*shotAsMat);
+		//if (disc == 1) {
+			//imwrite("wrongdisc.png", *shotAsMat);
+			//exit(-1);
+		//}
+		//cout << disc*35 << endl;
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 	}
 
 
@@ -362,7 +578,21 @@ public:
 		return (double) clock()/CLOCKS_PER_SEC;
 	}
 
+<<<<<<< HEAD
 	void recover() {
+=======
+	bool recover() {
+		//true on success, false on failure
+		updateShot();
+		Send(L"{ESC down}", 0);
+		Sleep(randInt(200, 300));
+		Send(L"{ESC up}", 0);
+		Sleep(randInt(500, 600));
+		if (!f.exitMenuSeen(*shotAsMat)) return false;
+		moveAndClick(623, 386, 689, 397, 4500, 6000); //click "leave game"
+		moveAndClick(95, 320, 236, 336, 200, 250); //change quest
+
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 		//try to exit and recover
 	}
 
@@ -388,6 +618,7 @@ public:
 		Send(L"{SPACE up}", 0);
 		moveAndClick(541, 245, 584, 256, 1000, 1900); //click "OK"
 		moveAndHold(913, 133, 934, 152, 0, 0, false, L"right"); //right click on Ghom
+<<<<<<< HEAD
 		do {
 			updateShot();
 		} while(!f.hatredDepleted(*shotAsMat));
@@ -402,12 +633,22 @@ public:
 			double leftClickTime = (double) randInt(60, 100)/10;
 			moveAndHold(738, 223, 761, 242, 0, 0, false);
 			while(getTime() - leftClickStart < leftClickTime) {
+=======
+		double startTime = getTime();
+		cout << "Start time: " << startTime << endl;
+		while (getTime() - startTime < 15) {
+			bool finished = false;
+			MouseDown(L"right");
+			while(!f.hatredDepleted(*shotAsMat) && 
+				getTime() - startTime < 15) {
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 				updateShot();
 				if (f.questEnded(*shotAsMat)) {
 					finished = true;
 					break;
 				}
 			}
+<<<<<<< HEAD
 			MouseUp(L"left");
 			if (finished) break;
 			Sleep(randInt(50,100));
@@ -415,25 +656,59 @@ public:
 			MouseDown(L"right");
 			while(!f.hatredDepleted(*shotAsMat) && 
 				getTime() - startTime < 15) {
+=======
+			Sleep(randInt(50, 100));
+			MouseUp(L"right");
+			if (finished) break;
+			//cout << getTime() << endl;
+			double leftClickStart = getTime();
+			double leftClickTime = (double) randInt(60, 100)/10;
+			Send(L"{LSHIFT down}", 0);
+			Sleep(randInt(50,100));
+			moveAndHold(738, 223, 761, 242, 0, 0, false);
+			while(getTime() - leftClickStart < leftClickTime) {
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 				updateShot();
 				if (f.questEnded(*shotAsMat)) {
 					finished = true;
 					break;
 				}
 			}
+<<<<<<< HEAD
 			Sleep(randInt(50, 100));
 			MouseUp(L"right");
 			if (finished) break;
 		}
 		//if (!f.questEnded(*shotAsMat)) exit(-1);
 		Send(L"{LSHIFT up}", 0);
+=======
+			MouseUp(L"left");
+			if (finished) break;
+			Sleep(randInt(50,100));
+		}
+		//if (!f.questEnded(*shotAsMat)) exit(-1);
+		Send(L"{LSHIFT up}", 0);
+		updateShot();
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 		if (!f.questEnded(*shotAsMat)) exit(-1);
 		moveAndClick(646, 620, 704, 631, 200, 300);
 		//don't fool around picking things up for more than 10 seconds
 		double startPickTime = getTime();
 		Point* p;
+<<<<<<< HEAD
 		do {
 			updateShot();
+=======
+		int n=0;
+		
+		do {
+			updateShot();
+			//stringstream ss;
+			//ss << "itemsave" << n << ".png";
+			//n++;
+			//imwrite("items.png", *shotAsMat);
+			//exit(-1);
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 			p = f.nextItem(*shotAsMat);
 			if (p != NULL) {
 				int leftx = p->x - 6;
@@ -464,7 +739,14 @@ public:
 		if (!success) exit(-1);
 		moveAndClick(457, 299, 471, 315, 700, 800);
 		//sell items
+<<<<<<< HEAD
 		updateShot();
+=======
+		Sleep(randInt(600,1000));
+		updateShot();
+		//imwrite("inv3.png", *shotAsMat);
+		//exit(-1);
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 		for (int r = 0; r < 1; r++) {
 			for (int c = 0; c < 10; c++) {
 				if (r==0 && c==0) continue;
@@ -488,11 +770,16 @@ public:
 			Send(L"{ESC up}", 0);
 		}
 		else exit(-1);
+<<<<<<< HEAD
 		moveAndClick(623, 386, 689, 397, 4500, 6000);
+=======
+		moveAndClick(623, 386, 689, 397, 4500, 6000); //click "leave game"
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 		//Sleep(2000);
 
 	}
 
+<<<<<<< HEAD
 
 	string itoa(int integer){
 		stringstream ss;
@@ -732,6 +1019,8 @@ public:
 
 
 	
+=======
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 	~Bot() {
 		ReleaseDC(winHandle, hDDC);
 		DeleteDC(hCDC);
@@ -740,11 +1029,74 @@ public:
 	}
 };
 
+<<<<<<< HEAD
 
 int main(int argn, char** argv)
 {
 	LPCWSTR title = L"Diablo III";
 	AutoItSetOption(L"MouseCoordMode", 2);
+=======
+void sighandler(int signal) {
+	flag = true;
+}
+
+BOOL WINAPI ConsoleHandler(DWORD CEvent)
+{
+   flag = true;
+   return true;
+}
+/*
+double getV(double y, double theta, double h, double fy) {
+	return fy*y/(tan(y + h*tan(theta)) + h);
+}
+*/
+int main(int argn, char** argv)
+{/*
+	for (double fy = 0; fy < 100; fy++) {
+		for (double h = 0; h < 100; h++) {
+			for (double theta = 0; theta < CV_PI/2; theta += 0.01) {
+				
+			}
+		}
+	}
+	*/
+
+	cout << clock()/CLOCKS_PER_SEC;
+	//Mat goldim = imread("screenshot3.png", CV_LOAD_IMAGE_COLOR);
+
+	/*
+	bool* mask = (bool*) calloc(256*256*256, sizeof(bool));
+	string line;
+	ifstream myfile ("color.txt");
+	Mat visualizer(256,256,CV_8UC1);
+	if (myfile.is_open())
+	{
+	    while ( myfile.good() )
+		{
+			getline (myfile,line);
+			int val = stoi(line);
+			int R = val & 0x0000FF;
+			int G = (val & 0x00FF00)>>8;
+			int B = (val & 0xFF0000)>>16;
+			mask[R*256*256 + G*256 + B] = true;
+			visualizer.at<uchar>(R, G) = B;
+			//cout << R << " "<<G<<" "<<B<<endl;
+		}
+	myfile.close();
+  }*/
+/*
+	imshow("graph", visualizer);
+	waitKey(0);
+	SetConsoleCtrlHandler( (PHANDLER_ROUTINE)ConsoleHandler,TRUE);
+	//signal(SIGABRT, &sighandler);
+	*/
+//	SetConsoleCtrlHandler( (PHANDLER_ROUTINE)ConsoleHandler,TRUE);
+	LPCWSTR title = L"Diablo III";
+	AutoItSetOption(L"MouseCoordMode", 2);
+	//MouseMove(10, 10, 50);
+	cout << "move done" << endl;
+	//return 0;
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
 
 	WinActivate(title, L"");
 	WinWaitActive(title, L"", 0);
@@ -759,6 +1111,7 @@ int main(int argn, char** argv)
 	HWND handle = (HWND) wcstol(handleArr, NULL, 16);
 	cout<<"starting bot"<<endl;
 	Bot myBot(handle);
+<<<<<<< HEAD
 	//bool m = myBot.checkMouseWheel(Rect(235,176,218,347), L"down", 14);
 	//cout << m <<endl;
 	myBot.selectQuest(28,1);
@@ -784,3 +1137,84 @@ int main(int argn, char** argv)
 	return 0;
 }
 
+=======
+	//myBot.goToSupplyChest();
+	int startTime2 = time(NULL);
+	myBot.saveSnapshot(argv[1], 1000);
+	//myBot.SpiralSearch(500, 500);
+	for (int i=0; i < 10; i++) {
+		cout << "run number " << i << endl;
+		//myBot.killGhom();
+	}
+	//myBot.killGhom();
+	//myBot.killGhom();
+	int endTime2 = time(NULL);
+	cout << endTime2 - startTime2 << endl;
+	return 0;
+	myBot.saveSnapshot("hatredtest.png", 200);
+	cout << clock()/CLOCKS_PER_SEC;
+	return 0;
+	
+	int startTime = time(NULL);
+	cout<<time(NULL)<<endl;
+	flag = true;
+	while(true) {
+		if (flag) break;
+		myBot.updateShot();
+
+	}
+//	return 0;
+	//cout<<myBot.numUsed;
+	int endTime = time(NULL);
+	stringstream ss;
+	ss << "took " << endTime - startTime << " seconds" << endl;
+	cout << ss.str();
+	/*
+	ofstream colorfile;
+	colorfile.open("color.txt");
+	for (int i=0; i < 256*256*256; i++) {
+		if (myBot.colorFreq[i] != 0)
+			colorfile << i << endl;
+	}
+	colorfile.close();*/
+	//223324
+	//return 0;
+	//uncomment below, and comment out myBot.updateshot() and return 0,
+	//to test on an image
+	Mat testImage = imread(argv[1], CV_LOAD_IMAGE_COLOR);
+	myBot.findGold(testImage);
+	return 0;
+	Mat temp = imread("finaltemplate100002.png", CV_LOAD_IMAGE_COLOR);
+//	myBot.getDiscipline3(testImage);
+	//CvKNearest::
+	int diff = 0;
+	Mat region(testImage, Rect(918, 621, 45, 99));
+	for (int r=0; r < 99; r++) {
+		for (int c=0; c < 45; c++) {
+			Vec3b val = region.at<Vec3b>(r, c);
+			Vec3b tempVal = temp.at<Vec3b>(r, c);
+			if (tempVal[0] == 0 && tempVal[1]==0 && tempVal[2]==0) continue;
+			//diff += abs(val[0]-tempVal[0]) + abs(val[1]-tempVal[1]) 
+				//+ abs(val[2]-tempVal[2]);
+			diff += abs(val[0]-tempVal[0]);
+			int index = val[2]*256*256 + val[1]*256 + val[0];
+		//	double dist = myBot.predict(val);
+		//	region.at<Vec3b>(r, c)[0] = dist;
+//			region.at<Vec3b>(r, c)[1] = dist;
+			//region.at<Vec3b>(r, c)[2] = dist;
+			if (myBot.isColorInDisc[index]) {
+				
+			}
+		}
+	}
+	cout << diff<<endl;
+	imshow("test", region);
+	imshow("tempate", temp);
+	waitKey(0);
+	//myBot.getDiscipline(testImage, mask);
+	
+
+	return 0;
+	
+}
+>>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
