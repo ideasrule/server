@@ -265,7 +265,11 @@ using namespace std;
 	bool ItemFinder::exitMenuSeen(Mat shot) {
 		Mat region(shot, Rect(510, 207, 245, 250));
 		double score = correlate(region, endmenuTemp);
-		return score > 0.95;
+		//cout << score << endl;
+	//	imshow("region", region);
+		//waitKey(0);
+		//cin.get();
+		return score > 0.9;
 	}
 
 	bool isSeen(Mat shot, int what) {
@@ -285,72 +289,7 @@ using namespace std;
 		return false;
 	}
 int main3(int argn, char** argv) {
-	ItemFinder finder;
-	
 
-	Mat testim = imread("inv2.png", CV_LOAD_IMAGE_COLOR);
-	for (int r = 0; r < 6; r++) {
-
-	Mat testim = imread("items.png", CV_LOAD_IMAGE_COLOR);
-	/*for (int r = 0; r < 6; r++) {
->>>>>>> 882d54640231ea7f6336d5565495e720e0250c0e
-		for (int c = 0; c < 10; c++) {
-			finder.invSpotEmpty(testim, r, c);
-			cout << " ";
-		}
-		cout << endl;
-<<<<<<< HEAD
-	}
-=======
-	}*/
-
-	Point* p = finder.nextItem(testim);
-	if (p != NULL) {
-		cout << p->x << " " << p->y << endl;
-		cout << p << endl;
-	}
-	//finder.hatredDepleted(testim);
-	//finder.checkInv(testim);
-	//Mat finishRegion(testim, Rect(492, 507, 277, 136));
-	//finder.questEnded(testim);
-	//return 0;
-	/*
-	Mat im = imread("captainbox2.png", CV_LOAD_IMAGE_COLOR);
-	finder.findTemp(im, finder.boxTemp);
-	return 0;
-	//cvtColor(im, im, CV_BGR2HSV);
-	Mat blue = finder.applyLim(im, finder.isBlueOrYellow);
-	imshow("items", blue);
-	waitKey(0);
-	return 0;
-
-	for (int r = 0; r < blue.rows; r++) {
-		int count = 0;
-		Vec3b* ptr = blue.ptr<Vec3b>(r);
-		vector<int> bluePixelLocs;
-		for (int c = 0; c < blue.cols; c++) {
-			if (ptr[c][0] != 0 || ptr[c][1] != 0 || ptr[c][2] != 0) {
-				bluePixelLocs.push_back(c);
-				count++;
-			}
-		}
-		if (count > 40) {
-			Point start(bluePixelLocs.front(), r);
-			Point end(bluePixelLocs.back(), r);
-			line(blue, start, end, Scalar(255, 0, 0), 1);
-		}
-		//cout << count << " ";
-	}
-	imshow("result", blue);
-	waitKey(0);
-	return 0;
-
-	cout << im << endl;
-	Mat result = finder.applyLim(im, finder.isWhite);
-	imshow("white thres", result);
-	waitKey(0);
-	cout <<"hello"<<endl;
-	return 0;*/
 	return 0;
 }
 

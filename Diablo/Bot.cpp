@@ -75,9 +75,6 @@ class Bot {
 	//special saturation threshold for health
 	static const int HEALTH_SAT_THRES = 20;
 
-	double currTime;
-	double holdUntil;
-
 	ItemFinder f;
 public:
 	bool* isColorInDisc;
@@ -112,7 +109,6 @@ public:
 		shot = CreateCompatibleBitmap(hDDC, WIDTH, HEIGHT);
 		oldBitmap = (HBITMAP) SelectObject(hCDC, shot);
 		shotAsMat = new Mat(HEIGHT, WIDTH, CV_8UC3);
-		currTime = clock()/CLOCKS_PER_SEC;
 	}
 
 
@@ -231,24 +227,46 @@ public:
 	void updateShot() {
 		/*Takes a screenshot and saves it into shotAsMat*/
 		using namespace Gdiplus;
+					cout << "end sleep1" << endl;
+			cout << getTime() << endl;
 		SelectObject(hCDC, shot);
+					cout << "end sleep2" << endl;
+			cout << getTime() << endl;
 		BitBlt(hCDC, 0, 0, WIDTH, HEIGHT, hDDC, 0, 0, SRCCOPY);
+					cout << "end sleep3" << endl;
+			cout << getTime() << endl;
 		SelectObject(hCDC, oldBitmap);
+					cout << "end sleep4" << endl;
+			cout << getTime() << endl;
 		Bitmap shotBitmap(shot, NULL);
+					cout << "end sleep5" << endl;
+			cout << getTime() << endl;
 		BitmapData source;
+					cout << "end sleep6" << endl;
+			cout << getTime() << endl;
 		Gdiplus::Rect bounds(0, 0, shotBitmap.GetWidth(), shotBitmap.GetHeight());
+					cout << "end sleep7" << endl;
+			cout << getTime() << endl;
 		Status status = shotBitmap.LockBits(&bounds, ImageLockModeRead, PixelFormat24bppRGB, &source);
+					cout << "end sleep8" << endl;
+			cout << getTime() << endl;
 		if (status != Ok) {
 			cout << "error locking bitmap bits!" << endl;
 			return;
 		}
 		BYTE* dest = (BYTE*) shotAsMat->data;
+					cout << "end sleep9" << endl;
+			cout << getTime() << endl;
 		for (int y = 0; y < source.Height; y++) {
 			BYTE* src = (BYTE*) source.Scan0 + y * source.Stride;
 			BYTE* dst = (BYTE*) (dest + y * shotAsMat->step);
 			memcpy(dst, src, 3*source.Width);
 		}
+					cout << "end sleepA" << endl;
+			cout << getTime() << endl;
 		shotBitmap.UnlockBits(&source);
+					cout << "end sleepB" << endl;
+			cout << getTime() << endl;
 	}
 
 
@@ -362,9 +380,21 @@ public:
 		return (double) clock()/CLOCKS_PER_SEC;
 	}
 
-	void recover() {
+bool recover() {
+		//true on success, false on failure
+		updateShot();
+		Send(L"{ESC down}", 0);
+		Sleep(randInt(200, 300));
+		Send(L"{ESC up}", 0);
+		Sleep(randInt(1000, 1600));
+		updateShot();
+		if (!f.exitMenuSeen(*shotAsMat)) exit(-1);
+		moveAndClick(623, 386, 689, 397, 4500, 6000); //click "leave game"
+		moveAndClick(95, 320, 236, 336, 200, 250); //change quest
 		//try to exit and recover
+		selectQuest(22, 2);
 	}
+
 
 	void killGhom() {
 		ItemFinder f;
@@ -388,33 +418,13 @@ public:
 		Send(L"{SPACE up}", 0);
 		moveAndClick(541, 245, 584, 256, 1000, 1900); //click "OK"
 		moveAndHold(913, 133, 934, 152, 0, 0, false, L"right"); //right click on Ghom
-		do {
-			updateShot();
-		} while(!f.hatredDepleted(*shotAsMat));
-		Sleep(randInt(100,200));
-		MouseUp(L"right");
-
-		Send(L"{LSHIFT down}", 0);
-		double startTime = getTime();
-		while (getTime() - startTime < 15) {
-			double leftClickStart = getTime();
+		double endTime = getTime() + 15;
+		//cout << "Start time: " << startTime << endl;
+		while (getTime() < endTime) {
 			bool finished = false;
-			double leftClickTime = (double) randInt(60, 100)/10;
-			moveAndHold(738, 223, 761, 242, 0, 0, false);
-			while(getTime() - leftClickStart < leftClickTime) {
-				updateShot();
-				if (f.questEnded(*shotAsMat)) {
-					finished = true;
-					break;
-				}
-			}
-			MouseUp(L"left");
-			if (finished) break;
-			Sleep(randInt(50,100));
-			//MouseClick(L"right", 738, 223, 1, 0);
 			MouseDown(L"right");
 			while(!f.hatredDepleted(*shotAsMat) && 
-				getTime() - startTime < 15) {
+				getTime() < endTime) {
 				updateShot();
 				if (f.questEnded(*shotAsMat)) {
 					finished = true;
@@ -424,16 +434,41 @@ public:
 			Sleep(randInt(50, 100));
 			MouseUp(L"right");
 			if (finished) break;
+			//cout << getTime() << endl;
+			double leftClickEndTime = getTime() + randInt(60, 100)/10.0;
+			leftClickEndTime = min(leftClickEndTime, endTime);
+			//double leftClickTime = (double) randInt(60, 100)/10;
+			Send(L"{LSHIFT down}", 0);
+			Sleep(randInt(50,100));
+			moveAndHold(738, 223, 761, 242, 0, 0, false);
+			while(getTime() < leftClickEndTime) {
+				updateShot();
+				if (f.questEnded(*shotAsMat)) {
+					finished = true;
+					break;
+				}
+			}
+			MouseUp(L"left");
+			if (finished) break;
+			Sleep(randInt(50,100));
 		}
 		//if (!f.questEnded(*shotAsMat)) exit(-1);
 		Send(L"{LSHIFT up}", 0);
-		if (!f.questEnded(*shotAsMat)) exit(-1);
+		updateShot();
+		if (!f.questEnded(*shotAsMat)) recover(); return;
 		moveAndClick(646, 620, 704, 631, 200, 300);
 		//don't fool around picking things up for more than 10 seconds
 		double startPickTime = getTime();
 		Point* p;
+		int n=0;
+		
 		do {
 			updateShot();
+			//stringstream ss;
+			//ss << "itemsave" << n << ".png";
+			//n++;
+			//imwrite("items.png", *shotAsMat);
+			//exit(-1);
 			p = f.nextItem(*shotAsMat);
 			if (p != NULL) {
 				int leftx = p->x - 6;
@@ -461,10 +496,13 @@ public:
 		Send(L"{t up}", 0);
 		Sleep(randInt(8500, 9500));
 		bool success = goToSupplyChest();
-		if (!success) exit(-1);
+		if (!success) recover(); return;
 		moveAndClick(457, 299, 471, 315, 700, 800);
 		//sell items
+		Sleep(randInt(600,1000));
 		updateShot();
+		//imwrite("inv3.png", *shotAsMat);
+		//exit(-1);
 		for (int r = 0; r < 1; r++) {
 			for (int c = 0; c < 10; c++) {
 				if (r==0 && c==0) continue;
@@ -487,11 +525,12 @@ public:
 			Sleep(randInt(50, 100));
 			Send(L"{ESC up}", 0);
 		}
-		else exit(-1);
-		moveAndClick(623, 386, 689, 397, 4500, 6000);
+		else recover(); return;
+		moveAndClick(623, 386, 689, 397, 4500, 6000); //click "leave game"
 		//Sleep(2000);
 
 	}
+
 
 
 	string itoa(int integer){
@@ -531,15 +570,17 @@ public:
 		int questRegionYSize = 347;
 		Rect questRegionRect = Rect(questRegionX, questRegionY, questRegionXSize, questRegionYSize);
 		bool scrolled = checkMouseWheel(questRegionRect, direction, clicks);
-		if (scrolled == false){
+		if (!scrolled){
 			moveAndClick(530, 511, 540, 520, 300,800 );
 			scrolled = checkMouseWheel(questRegionRect, direction, clicks);
-			assert (scrolled ==true);
+			assert (scrolled);
 		}
 	}
 
 
 	bool selectQuest(int quest_number, int subquest_number){
+		cout << "select quest started" << endl;
+		cout << getTime() << endl;
 		int questRegionX = 235;
 		int questRegionY = 176;
 		int questRegionXSize = 218;
@@ -574,11 +615,22 @@ public:
 			HANDLE filehandle = FindFirstFile(quest_name.c_str(), &file);
 			quests.push_back(imread (directory_name + "/" +file.cFileName));
 		}
+		cout << "loaded" << endl;
+		cout << getTime() << endl;
 		while (!quest_found){
+									cout << "loop iteration" << endl;
+			cout << getTime() << endl;
+						Mat questRegion(*shotAsMat,questRegionRect);
+
 			Sleep(randInt(200,800));
+			cout << "end sleep" << endl;
+			cout << getTime() << endl;
 			updateShot();
-			Mat questRegion(*shotAsMat,questRegionRect);
+						cout << "end update" << endl;
+			cout << getTime() << endl;
 			desired_matches = f.findTemp(questRegion, quests[quest_number]);
+			cout << "first match" << endl;
+			cout << getTime() << endl;
 			if (desired_matches.size() >= 1){
 				quest_found = true;
 				break;
@@ -588,7 +640,10 @@ public:
 			int i;
 			for(i = 3; match_found==false && i<quests.size(); i+=3){
 				matches = f.findTemp(questRegion, quests[i]);
+				cout << "loop 2" << endl;
+				cout << getTime() << endl;
 				if (matches.size() >= 1){
+
 					match_found = true;
 					cout <<"true" << i <<endl;
 					break;
@@ -743,10 +798,14 @@ public:
 
 int main(int argn, char** argv)
 {
+	//Sleep(2000);
+	//MouseWheel(L"up", 20);
+	//return 0;
 	LPCWSTR title = L"Diablo III";
 	AutoItSetOption(L"MouseCoordMode", 2);
 
 	WinActivate(title, L"");
+	Sleep(200);
 	WinWaitActive(title, L"", 0);
 	//have to get window position so that WinMove only rescales, instead of move + rescale
 	long x = WinGetPosX(title, L"");
@@ -759,9 +818,17 @@ int main(int argn, char** argv)
 	HWND handle = (HWND) wcstol(handleArr, NULL, 16);
 	cout<<"starting bot"<<endl;
 	Bot myBot(handle);
+	//myBot.updateShot();
+	//myBot.saveSnapshot("mytest.png", 2000);
+	//return 0;
+	for (int i=0; i < 10; i++) {
+		myBot.killGhom();
+	}
+	//myBot.updateShot();
+	//return 0;
 	//bool m = myBot.checkMouseWheel(Rect(235,176,218,347), L"down", 14);
 	//cout << m <<endl;
-	myBot.selectQuest(28,1);
+	//myBot.selectQuest(0,1);
 	//Sleep (5000);
 	//myBot.selectQuest(17);
 	//Sleep (5000);
