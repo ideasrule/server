@@ -69,7 +69,7 @@ using namespace std;
 		Mat tempRegion(invTemp, Rect(colLocs[c], rowLocs[r], 27, 27));
 		Mat imRegion(shot, Rect(921 + colLocs[c], 397 + rowLocs[r], 27, 27));
 		double score = correlate(tempRegion, imRegion);
-		cout << score;
+	//	cout << score;
 		if (score > 0.8) return true;
 		return false;
 	}
@@ -117,6 +117,8 @@ using namespace std;
 		Mat finishRegion(shot, Rect(492, 507, 277, 136));
 		double score = correlate(finishRegion, endTemp);
 	//	cout << score << endl;
+		//imshow("finish region", finishRegion);
+		//waitKey(0);
 		if (score > 0.95) return true;
 		return false;
 	}
@@ -214,7 +216,7 @@ using namespace std;
 					count++;
 				}
 			}
-			if (count > 60 && count > bestCount) {
+			if (count > 50 && count > bestCount) {
 				bestCount = count;
 				int col = pixelLocs.size()/2;
 				bestPoint = new Point(pixelLocs[col], r);

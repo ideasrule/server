@@ -227,46 +227,24 @@ public:
 	void updateShot() {
 		/*Takes a screenshot and saves it into shotAsMat*/
 		using namespace Gdiplus;
-					cout << "end sleep1" << endl;
-			cout << getTime() << endl;
 		SelectObject(hCDC, shot);
-					cout << "end sleep2" << endl;
-			cout << getTime() << endl;
 		BitBlt(hCDC, 0, 0, WIDTH, HEIGHT, hDDC, 0, 0, SRCCOPY);
-					cout << "end sleep3" << endl;
-			cout << getTime() << endl;
 		SelectObject(hCDC, oldBitmap);
-					cout << "end sleep4" << endl;
-			cout << getTime() << endl;
 		Bitmap shotBitmap(shot, NULL);
-					cout << "end sleep5" << endl;
-			cout << getTime() << endl;
 		BitmapData source;
-					cout << "end sleep6" << endl;
-			cout << getTime() << endl;
 		Gdiplus::Rect bounds(0, 0, shotBitmap.GetWidth(), shotBitmap.GetHeight());
-					cout << "end sleep7" << endl;
-			cout << getTime() << endl;
 		Status status = shotBitmap.LockBits(&bounds, ImageLockModeRead, PixelFormat24bppRGB, &source);
-					cout << "end sleep8" << endl;
-			cout << getTime() << endl;
 		if (status != Ok) {
 			cout << "error locking bitmap bits!" << endl;
 			return;
 		}
 		BYTE* dest = (BYTE*) shotAsMat->data;
-					cout << "end sleep9" << endl;
-			cout << getTime() << endl;
 		for (int y = 0; y < source.Height; y++) {
 			BYTE* src = (BYTE*) source.Scan0 + y * source.Stride;
 			BYTE* dst = (BYTE*) (dest + y * shotAsMat->step);
 			memcpy(dst, src, 3*source.Width);
 		}
-					cout << "end sleepA" << endl;
-			cout << getTime() << endl;
 		shotBitmap.UnlockBits(&source);
-					cout << "end sleepB" << endl;
-			cout << getTime() << endl;
 	}
 
 
@@ -380,7 +358,8 @@ public:
 		return (double) clock()/CLOCKS_PER_SEC;
 	}
 
-bool recover() {
+void recover() {
+		cout << "recover called" << endl;
 		//true on success, false on failure
 		updateShot();
 		Send(L"{ESC down}", 0);
@@ -389,23 +368,21 @@ bool recover() {
 		Sleep(randInt(1000, 1600));
 		updateShot();
 		if (!f.exitMenuSeen(*shotAsMat)) exit(-1);
-		moveAndClick(623, 386, 689, 397, 4500, 6000); //click "leave game"
-		moveAndClick(95, 320, 236, 336, 200, 250); //change quest
-		//try to exit and recover
-		selectQuest(22, 2);
+		moveAndClick(623, 386, 689, 397, 1500, 18000); //click "leave game"
 	}
 
 
 	void killGhom() {
 		ItemFinder f;
 		moveAndClick(95, 320, 236, 336, 200, 250); //change quest
-		moveAndClick(291, 438, 424, 442, 200, 250); //breached keep
-		moveAndClick(280, 517, 384, 520, 200, 250); //kill ghom
-
+		//moveAndClick(291, 438, 424, 442, 200, 250); //breached keep
+		//moveAndClick(280, 517, 384, 520, 200, 250); //kill ghom
+		selectQuest(22, 2);
 		moveAndClick(845, 586, 845, 586, 200, 250); //click "Select Quest"
 
 		moveAndClick(533, 423, 580, 431, 300, 350); //click OK
 		moveAndClick(179, 278, 233, 289, 8000, 9000); //click "Start Game"
+
 
 		moveAndClick(418, 349, 445, 368, 1300, 1420); //click on waypoint
 		moveAndClick(122, 291, 222, 299, 2200, 2500); //go to keep 3
@@ -418,7 +395,7 @@ bool recover() {
 		Send(L"{SPACE up}", 0);
 		moveAndClick(541, 245, 584, 256, 1000, 1900); //click "OK"
 		moveAndHold(913, 133, 934, 152, 0, 0, false, L"right"); //right click on Ghom
-		double endTime = getTime() + 15;
+		double endTime = getTime() + 20;
 		//cout << "Start time: " << startTime << endl;
 		while (getTime() < endTime) {
 			bool finished = false;
@@ -455,7 +432,12 @@ bool recover() {
 		//if (!f.questEnded(*shotAsMat)) exit(-1);
 		Send(L"{LSHIFT up}", 0);
 		updateShot();
-		if (!f.questEnded(*shotAsMat)) recover(); return;
+		//imshow("shot", *shotAsMat);
+		//waitKey(0);
+		if (!f.questEnded(*shotAsMat)) {
+			cout << "quest ended returned false" << endl;
+			recover(); return;
+		}
 		moveAndClick(646, 620, 704, 631, 200, 300);
 		//don't fool around picking things up for more than 10 seconds
 		double startPickTime = getTime();
@@ -476,7 +458,7 @@ bool recover() {
 				assert(leftx > 0 && topy > 0);
 				moveAndClick(leftx, topy, leftx + 12, topy + 3, 300, 350);
 			}
-		} while(p != NULL && getTime() - startPickTime < 10);
+		} while(p != NULL && getTime() - startPickTime < 20);
 		//now pick up gold
 		vector<Point> goldLocs;
 		do {
@@ -490,14 +472,22 @@ bool recover() {
 				moveAndClick(leftx, topy, leftx + 14, topy + 8, 100, 250);
 			}
 		} while(goldLocs.size() != 0 &&
-			getTime() - startPickTime < 10);
+			getTime() - startPickTime < 20);
 		Send(L"{t down}", 0);
 		Sleep(randInt(100, 160));
 		Send(L"{t up}", 0);
 		Sleep(randInt(8500, 9500));
+		cout <<"aaaaa";
+		cout <<getTime();
 		bool success = goToSupplyChest();
-		if (!success) recover(); return;
+		cout<<"bbb";
+		if (!success) {
+			recover(); 
+			return;
+		}
+		cout<<"cc"<<endl;
 		moveAndClick(457, 299, 471, 315, 700, 800);
+		cout<<"dd"<<endl;
 		//sell items
 		Sleep(randInt(600,1000));
 		updateShot();
@@ -525,7 +515,7 @@ bool recover() {
 			Sleep(randInt(50, 100));
 			Send(L"{ESC up}", 0);
 		}
-		else recover(); return;
+		else { recover(); return; }
 		moveAndClick(623, 386, 689, 397, 4500, 6000); //click "leave game"
 		//Sleep(2000);
 
@@ -615,15 +605,11 @@ bool recover() {
 			HANDLE filehandle = FindFirstFile(questName.c_str(), &file);
 			quests.push_back(imread (directoryName + "/" +file.cFileName));
 		}
-		cout << "loaded" << endl;
-		cout << getTime() << endl;
 		while (!quest_found){
 			Mat questRegion(*shotAsMat,questRegionRect);
 			Sleep(randInt(200,800));
 			updateShot();
 			desiredMatches = f.findTemp(questRegion, quests[questNumber]);
-			cout << "first match" << endl;
-			cout << getTime() << endl;
 			if (desiredMatches.size() >= 1){
 				quest_found = true;
 				break;
@@ -633,12 +619,8 @@ bool recover() {
 			int i;
 			for(i = 3; match_found==false && i<quests.size(); i+=3){
 				matches = f.findTemp(questRegion, quests[i]);
-				cout << "loop 2" << endl;
-				cout << getTime() << endl;
 				if (matches.size() >= 1){
-
 					match_found = true;
-					cout <<"true" << i <<endl;
 					break;
 				}
 			}
@@ -695,7 +677,7 @@ bool recover() {
 				if (bullet_point_matches.size()==0 && trophyMatches.size() ==0){
 					MouseClick(L"left", questRegionX+desiredMatches[0].x, questRegionY+desiredMatches[0].y, 1, 9);
 
-					Sleep(randInt(25,100));
+					Sleep(randInt(50,100));
 					updateShot();
 					questRegion = Mat(*shotAsMat,questRegionRect);
 					
@@ -857,19 +839,19 @@ int main(int argn, char** argv)
 	WCHAR handleArr[33];
 	WinGetHandle(L"Diablo III", L"", handleArr, 32);
 	HWND handle = (HWND) wcstol(handleArr, NULL, 16);
-	cout<<"starting bot"<<endl;
+	//cout<<"starting bot"<<endl;
 	Bot myBot(handle);
 	//myBot.updateShot();
 	//myBot.saveSnapshot("mytest.png", 2000);
 	//return 0;
-	//for (int i=0; i < 10; i++) {
-	//	myBot.killGhom();
-	//}
+	for (int i=0; i < 10; i++) {
+		myBot.killGhom();
+	}
 	//myBot.updateShot();
 	//return 0;
 	//bool m = myBot.checkMouseWheel(Rect(235,176,218,347), L"down", 14);
 	//cout << m <<endl;
-	myBot.selectQuest(11,1);
+//	myBot.selectQuest(22,2);
 	//Sleep (5000);
 	//myBot.selectQuest(17);
 	//Sleep (5000);
