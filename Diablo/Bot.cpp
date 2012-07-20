@@ -578,63 +578,53 @@ bool recover() {
 	}
 
 
-	bool selectQuest(int quest_number, int subquest_number){
-		cout << "select quest started" << endl;
-		cout << getTime() << endl;
+	bool selectQuest(int questNumber, int subquestNumber){
 		int questRegionX = 235;
 		int questRegionY = 176;
 		int questRegionXSize = 218;
 		int questRegionYSize = 347;
 		Rect questRegionRect = Rect(questRegionX, questRegionY, questRegionXSize, questRegionYSize);
-		vector<Point> desired_matches;
+		vector<Point> desiredMatches;
 		bool quest_found = false;
 		vector<Mat> quests;
-		string directory_name = "quests";
-		Mat bullet_point = imread (directory_name + "/bullet_point.png");
-		Mat trophy = imread (directory_name+ "/trophy.png");
-		imshow("a " ,trophy);
+		string directoryName = "quests";
+		Mat bullet_point = imread (directoryName + "/bullet_point.png");
+		Mat trophy = imread (directoryName+ "/trophy.png");
 		waitKey(0);
 		for (int i =1; i <=10; i++){
-			string quest_name = directory_name + "/1_" + itoa(i) + "_*";
+			string questName = directoryName + "/1_" + itoa(i) + "_*";
 			WIN32_FIND_DATA file;
-			HANDLE filehandle = FindFirstFile(quest_name.c_str(), &file);
-			quests.push_back( imread (directory_name + "/" +file.cFileName));
+			HANDLE filehandle = FindFirstFile(questName.c_str(), &file);
+			quests.push_back( imread (directoryName + "/" +file.cFileName));
 		}
 		for (int i =1; i <=10; i++){
-			string quest_name = directory_name + "/2_" + itoa(i) + "_*";
+			string questName = directoryName + "/2_" + itoa(i) + "_*";
 			WIN32_FIND_DATA file;
-			HANDLE filehandle = FindFirstFile(quest_name.c_str(), &file);
-			quests.push_back(imread (directory_name + "/" +file.cFileName));
+			HANDLE filehandle = FindFirstFile(questName.c_str(), &file);
+			quests.push_back(imread (directoryName + "/" +file.cFileName));
 		}	
 		for (int i =1; i <=7; i++){
-			string quest_name = directory_name + "/3_" + itoa(i) + "_*";
+			string questName = directoryName + "/3_" + itoa(i) + "_*";
 			WIN32_FIND_DATA file;
-			HANDLE filehandle = FindFirstFile(quest_name.c_str(), &file);
-			quests.push_back(imread (directory_name + "/" +file.cFileName));
+			HANDLE filehandle = FindFirstFile(questName.c_str(), &file);
+			quests.push_back(imread (directoryName + "/" +file.cFileName));
 		}
 		for (int i =1; i <=4; i++){
-			string quest_name = directory_name + "/4_" + itoa(i) + "_*";
+			string questName = directoryName + "/4_" + itoa(i) + "_*";
 			WIN32_FIND_DATA file;
-			HANDLE filehandle = FindFirstFile(quest_name.c_str(), &file);
-			quests.push_back(imread (directory_name + "/" +file.cFileName));
+			HANDLE filehandle = FindFirstFile(questName.c_str(), &file);
+			quests.push_back(imread (directoryName + "/" +file.cFileName));
 		}
 		cout << "loaded" << endl;
 		cout << getTime() << endl;
 		while (!quest_found){
-									cout << "loop iteration" << endl;
-			cout << getTime() << endl;
-						Mat questRegion(*shotAsMat,questRegionRect);
-
+			Mat questRegion(*shotAsMat,questRegionRect);
 			Sleep(randInt(200,800));
-			cout << "end sleep" << endl;
-			cout << getTime() << endl;
 			updateShot();
-						cout << "end update" << endl;
-			cout << getTime() << endl;
-			desired_matches = f.findTemp(questRegion, quests[quest_number]);
+			desiredMatches = f.findTemp(questRegion, quests[questNumber]);
 			cout << "first match" << endl;
 			cout << getTime() << endl;
-			if (desired_matches.size() >= 1){
+			if (desiredMatches.size() >= 1){
 				quest_found = true;
 				break;
 			}
@@ -654,7 +644,7 @@ bool recover() {
 			}
 			assert (match_found);
 			assert (matches.size()==1);
-			int relative_loc = quest_number - i;
+			int relative_loc = questNumber - i;
 			int moves = relative_loc + randInt(-3,3);
 			if (moves < 0){
 				scrollQuestMenu(L"up", abs(moves));
@@ -663,36 +653,36 @@ bool recover() {
 				scrollQuestMenu(L"down", abs(moves));
 			}
 		}
-		assert(desired_matches.size() ==1);
-		if (subquest_number ==0){
-			MouseClick(L"left", questRegionX+desired_matches[0].x, questRegionY+desired_matches[0].y, 1, randInt(1,9));
+		assert(desiredMatches.size() ==1);
+		if (subquestNumber ==0){
+			MouseClick(L"left", questRegionX+desiredMatches[0].x, questRegionY+desiredMatches[0].y, 1, randInt(1,9));
 		}
-		else if (subquest_number >0 && quest_number <quests.size()-1){
+		else if (subquestNumber >0 && questNumber <quests.size()-1){
 			Sleep(randInt(50,200));
 			updateShot();
 			Mat questRegion(*shotAsMat, questRegionRect);
-			vector<Point> next_quest_matches = f.findTemp(questRegion, quests[quest_number+1]);
+			vector<Point> next_quest_matches = f.findTemp(questRegion, quests[questNumber+1]);
 			assert (next_quest_matches.size()<=1);
 			if (next_quest_matches.size()==0){
 				scrollQuestMenu(L"down", randInt(2,4));
 				Sleep(randInt(50,100));
 				updateShot();
 				questRegion = Mat(*shotAsMat,Rect(235,176,218,347));
-				next_quest_matches = f.findTemp(questRegion, quests[quest_number+1]);
+				next_quest_matches = f.findTemp(questRegion, quests[questNumber+1]);
 				assert (next_quest_matches.size()==1);
 			}
-			vector<Point> desired_quest_matches = f.findTemp(questRegion, quests[quest_number]);
-			assert(desired_quest_matches.size()==1);
-			if ((next_quest_matches[0].y - desired_quest_matches[0].y) <18){
+			desiredMatches = f.findTemp(questRegion, quests[questNumber]);
+			assert(desiredMatches.size()==1);
+			if ((next_quest_matches[0].y - desiredMatches[0].y) <18){
 				cout<< "erorroror";	
 				Sleep(222222);
 				exit(1);
 			}
 			else{
 				int subquest_x = questRegionX;
-				int subquest_y = questRegionY+desired_quest_matches[0].y;
+				int subquest_y = questRegionY+desiredMatches[0].y;
 				int subquest_x_size = 35;
-				int subquest_y_size = next_quest_matches[0].y - desired_quest_matches[0].y;
+				int subquest_y_size = next_quest_matches[0].y - desiredMatches[0].y;
 				Sleep(randInt(50,100));
 				updateShot();
 				Mat subquest_region(*shotAsMat, Rect(subquest_x, subquest_y, subquest_x_size, subquest_y_size));
@@ -703,13 +693,13 @@ bool recover() {
 				cout <<trophyMatches.size();
 				assert (trophyMatches.size() <=1);
 				if (bullet_point_matches.size()==0 && trophyMatches.size() ==0){
-					MouseClick(L"left", questRegionX+desired_quest_matches[0].x, questRegionY+desired_quest_matches[0].y, 1, 9);
+					MouseClick(L"left", questRegionX+desiredMatches[0].x, questRegionY+desiredMatches[0].y, 1, 9);
 
 					Sleep(randInt(25,100));
 					updateShot();
 					questRegion = Mat(*shotAsMat,questRegionRect);
 					
-					next_quest_matches = f.findTemp(questRegion, quests[quest_number+1]);
+					next_quest_matches = f.findTemp(questRegion, quests[questNumber+1]);
 					if (next_quest_matches.size()==0){
 						scrollQuestMenu(L"down", randInt(2,4));
 					}
@@ -718,12 +708,12 @@ bool recover() {
 					updateShot();
 					questRegion = Mat(*shotAsMat,questRegionRect);
 					
-					next_quest_matches = f.findTemp(questRegion, quests[quest_number+1]);
+					next_quest_matches = f.findTemp(questRegion, quests[questNumber+1]);
 					assert (next_quest_matches.size()==1);
-					desired_quest_matches = f.findTemp(questRegion, quests[quest_number]);
-					assert(desired_quest_matches.size()==1);
-					subquest_y = questRegionY+desired_quest_matches[0].y;
-					subquest_y_size = next_quest_matches[0].y - desired_quest_matches[0].y;
+					desiredMatches = f.findTemp(questRegion, quests[questNumber]);
+					assert(desiredMatches.size()==1);
+					subquest_y = questRegionY+desiredMatches[0].y;
+					subquest_y_size = next_quest_matches[0].y - desiredMatches[0].y;
 					subquest_region=Mat(*shotAsMat, Rect(subquest_x, subquest_y, subquest_x_size, subquest_y_size));
 					bullet_point_matches = f.findTemp(subquest_region, bullet_point);
 					bullet_point_matches = f.segregateY(bullet_point_matches);
@@ -748,22 +738,22 @@ bool recover() {
 						bullet_point_matches.push_back(trophyMatches[0]);
 					}
 				}
-				if (bullet_point_matches.size() < subquest_number+1){
+				if (bullet_point_matches.size() < subquestNumber+1){
 					cout <<bullet_point_matches.size();
-					cout << subquest_number+1;
+					cout << subquestNumber+1;
 					cout<< "not enough lumber";
 					Sleep(222222);
 					exit(2);
 				}
-				MouseClick(L"left", subquest_x+bullet_point_matches[subquest_number].x+30, subquest_y+bullet_point_matches[subquest_number].y, 1, 9);
+				MouseClick(L"left", subquest_x+bullet_point_matches[subquestNumber].x+30, subquest_y+bullet_point_matches[subquestNumber].y, 1, 9);
 			}
 		}
-		else if(subquest_number >0 && quest_number ==quests.size()-1){
+		else if(subquestNumber >0 && questNumber ==quests.size()-1){
 			Sleep(randInt(50,150));
 			updateShot();
 			Mat questRegion(*shotAsMat,questRegionRect);
 			Mat subquest_region;
-			vector<Point> desired_quest_matches = f.findTemp(questRegion, quests[quest_number]);
+			vector<Point> desired_quest_matches = f.findTemp(questRegion, quests[questNumber]);
 			cout << desired_quest_matches.size();
 			assert(desired_quest_matches.size()==1);
 			int subquest_x = questRegionX;
@@ -773,7 +763,7 @@ bool recover() {
 			vector<Point> bullet_point_matches;
 			vector<Point> trophyMatches;
 			if (subquest_y_size < 18){
-				MouseClick(L"left", 235+desired_matches[0].x, 176+desired_matches[0].y, 1, 9);
+				MouseClick(L"left", 235+desired_quest_matches[0].x, 176+desired_quest_matches[0].y, 1, 9);
 			}
 			else{
 				subquest_region =Mat(*shotAsMat, Rect(subquest_x, subquest_y, subquest_x_size, subquest_y_size));
@@ -783,13 +773,13 @@ bool recover() {
 				trophyMatches = f.segregateY(trophyMatches);
 				assert (trophyMatches.size() <=1);
 				if (bullet_point_matches.size() ==0 && trophyMatches.size() ==0){
-					MouseClick(L"left", questRegionX+desired_matches[0].x, questRegionY+desired_matches[0].y, 1, 9);
+					MouseClick(L"left", questRegionX+desired_quest_matches[0].x, questRegionY+desired_quest_matches[0].y, 1, 9);
 				}
 			}
 			Sleep(randInt(50,150));
 			updateShot();
 			questRegion= Mat(*shotAsMat,questRegionRect);
-			desired_quest_matches = f.findTemp(questRegion, quests[quest_number]);
+			desired_quest_matches = f.findTemp(questRegion, quests[questNumber]);
 			cout << desired_quest_matches.size();
 			assert(desired_quest_matches.size()==1);
 			subquest_x = 235;
@@ -821,17 +811,17 @@ bool recover() {
 				}
 			}
 			assert (bullet_point_matches.size() >=1);
-			if (bullet_point_matches.size() < subquest_number+1){
+			if (bullet_point_matches.size() < subquestNumber+1){
 				cout <<bullet_point_matches.size();
-				cout << subquest_number+1;
+				cout << subquestNumber+1;
 				cout<< "not enough lumber";
 				Sleep(222222);
 				exit(2);
 			}
-			MouseClick(L"left", subquest_x+bullet_point_matches[subquest_number].x+30, subquest_y+bullet_point_matches[subquest_number].y, 1, 9);
+			MouseClick(L"left", subquest_x+bullet_point_matches[subquestNumber].x+30, subquest_y+bullet_point_matches[subquestNumber].y, 1, 9);
 		}
 		else{
-			cout << quest_number << " is invalid";
+			cout << questNumber << " is invalid";
 		}
 		return true;
 	}
@@ -879,7 +869,7 @@ int main(int argn, char** argv)
 	//return 0;
 	//bool m = myBot.checkMouseWheel(Rect(235,176,218,347), L"down", 14);
 	//cout << m <<endl;
-	myBot.selectQuest(30,1);
+	myBot.selectQuest(11,1);
 	//Sleep (5000);
 	//myBot.selectQuest(17);
 	//Sleep (5000);
