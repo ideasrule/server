@@ -591,6 +591,9 @@ bool recover() {
 		vector<Mat> quests;
 		string directory_name = "quests";
 		Mat bullet_point = imread (directory_name + "/bullet_point.png");
+		Mat trophy = imread (directory_name+ "/trophy.png");
+		imshow("a " ,trophy);
+		waitKey(0);
 		for (int i =1; i <=10; i++){
 			string quest_name = directory_name + "/1_" + itoa(i) + "_*";
 			WIN32_FIND_DATA file;
@@ -695,7 +698,11 @@ bool recover() {
 				Mat subquest_region(*shotAsMat, Rect(subquest_x, subquest_y, subquest_x_size, subquest_y_size));
 				vector<Point> bullet_point_matches = f.findTemp(subquest_region, bullet_point);
 				bullet_point_matches = f.segregateY(bullet_point_matches);
-				if (bullet_point_matches.size()==0){
+				vector<Point> trophyMatches = f.findTemp(subquest_region, trophy);
+				trophyMatches = f.segregateY(trophyMatches);
+				cout <<trophyMatches.size();
+				assert (trophyMatches.size() <=1);
+				if (bullet_point_matches.size()==0 && trophyMatches.size() ==0){
 					MouseClick(L"left", questRegionX+desired_quest_matches[0].x, questRegionY+desired_quest_matches[0].y, 1, 9);
 
 					Sleep(randInt(25,100));
@@ -720,7 +727,26 @@ bool recover() {
 					subquest_region=Mat(*shotAsMat, Rect(subquest_x, subquest_y, subquest_x_size, subquest_y_size));
 					bullet_point_matches = f.findTemp(subquest_region, bullet_point);
 					bullet_point_matches = f.segregateY(bullet_point_matches);
-
+					trophyMatches = f.findTemp(subquest_region, trophy);
+					trophyMatches = f.segregateY(trophyMatches);
+					assert (trophyMatches.size() <=1);
+				}
+				if (trophyMatches.size() == 1 && bullet_point_matches.size() == 0 ){
+					bullet_point_matches = trophyMatches;
+				}
+				else if (trophyMatches.size() == 1){
+					bool inserted = false;
+					for (int i =0; i<bullet_point_matches.size(); i++){
+						if (trophyMatches[0].y < bullet_point_matches[i].y){
+							vector<Point>::iterator bulletPointMatchesBegin = bullet_point_matches.begin();
+							bullet_point_matches.insert(bulletPointMatchesBegin+i,trophyMatches[0]);
+							inserted = true;
+							break;
+						}
+					}
+					if (inserted == false){
+						bullet_point_matches.push_back(trophyMatches[0]);
+					}
 				}
 				if (bullet_point_matches.size() < subquest_number+1){
 					cout <<bullet_point_matches.size();
@@ -745,14 +771,18 @@ bool recover() {
 			int subquest_x_size = 35;
 			int subquest_y_size = questRegionYSize - desired_quest_matches[0].y;
 			vector<Point> bullet_point_matches;
+			vector<Point> trophyMatches;
 			if (subquest_y_size < 18){
 				MouseClick(L"left", 235+desired_matches[0].x, 176+desired_matches[0].y, 1, 9);
 			}
 			else{
 				subquest_region =Mat(*shotAsMat, Rect(subquest_x, subquest_y, subquest_x_size, subquest_y_size));
 				bullet_point_matches = f.findTemp(subquest_region, bullet_point);
-				bullet_point_matches = f.segregateY(bullet_point_matches);
-				if (bullet_point_matches.size() ==0){
+				bullet_point_matches = f.segregateY(bullet_point_matches);;
+				trophyMatches = f.findTemp(subquest_region, trophy);
+				trophyMatches = f.segregateY(trophyMatches);
+				assert (trophyMatches.size() <=1);
+				if (bullet_point_matches.size() ==0 && trophyMatches.size() ==0){
 					MouseClick(L"left", questRegionX+desired_matches[0].x, questRegionY+desired_matches[0].y, 1, 9);
 				}
 			}
@@ -769,6 +799,27 @@ bool recover() {
 			subquest_region = Mat(*shotAsMat, Rect(subquest_x, subquest_y, subquest_x_size, subquest_y_size));
 			bullet_point_matches = f.findTemp(subquest_region, bullet_point);
 			bullet_point_matches = f.segregateY(bullet_point_matches);
+			
+			trophyMatches = f.findTemp(subquest_region, trophy);
+			trophyMatches = f.segregateY(trophyMatches);
+			assert (trophyMatches.size() <=1);
+			if (trophyMatches.size() == 1 && bullet_point_matches.size() == 0 ){
+				bullet_point_matches = trophyMatches;
+			}
+			else if (trophyMatches.size() == 1){
+				bool inserted = false;
+				for (int i =0; i<bullet_point_matches.size(); i++){
+					if (trophyMatches[0].y < bullet_point_matches[i].y){
+						vector<Point>::iterator bulletPointMatchesBegin = bullet_point_matches.begin();
+						bullet_point_matches.insert(bulletPointMatchesBegin+i,trophyMatches[0]);
+						inserted = true;
+						break;
+					}
+				}
+				if (inserted == false){
+					bullet_point_matches.push_back(trophyMatches[0]);
+				}
+			}
 			assert (bullet_point_matches.size() >=1);
 			if (bullet_point_matches.size() < subquest_number+1){
 				cout <<bullet_point_matches.size();
@@ -821,14 +872,14 @@ int main(int argn, char** argv)
 	//myBot.updateShot();
 	//myBot.saveSnapshot("mytest.png", 2000);
 	//return 0;
-	for (int i=0; i < 10; i++) {
-		myBot.killGhom();
-	}
+	//for (int i=0; i < 10; i++) {
+	//	myBot.killGhom();
+	//}
 	//myBot.updateShot();
 	//return 0;
 	//bool m = myBot.checkMouseWheel(Rect(235,176,218,347), L"down", 14);
 	//cout << m <<endl;
-	//myBot.selectQuest(0,1);
+	myBot.selectQuest(30,1);
 	//Sleep (5000);
 	//myBot.selectQuest(17);
 	//Sleep (5000);
@@ -836,7 +887,7 @@ int main(int argn, char** argv)
 	//Sleep (5000);
 	//myBot.selectQuest(29);
 	//cout <<"2222222222222222222222222222222222222222222222222222222222222222222222222222222222222";
-	Sleep(100000);
+	//Sleep(100000);
 	//return 0;
 	//int startTime2 = time(NULL);
 	//myBot.saveSnapshot("itemtest2.png", 2000);
@@ -847,7 +898,7 @@ int main(int argn, char** argv)
 	//int endTime2 = time(NULL);
 	//cout << endTime2 - startTime2 << endl;
 	//return 0;
-	myBot.saveSnapshot("test.png", 200);
+	//myBot.saveSnapshot("trophyquest.png", 200);
 	return 0;
 }
 
