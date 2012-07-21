@@ -563,7 +563,6 @@ void recover() {
 		if (!scrolled){
 			moveAndClick(530, 511, 540, 520, 300,800 );
 			scrolled = checkMouseWheel(questRegionRect, direction, clicks);
-			assert (scrolled);
 		}
 	}
 
@@ -580,7 +579,6 @@ void recover() {
 		string directoryName = "quests";
 		Mat bullet_point = imread (directoryName + "/bullet_point.png");
 		Mat trophy = imread (directoryName+ "/trophy.png");
-		waitKey(0);
 		for (int i =1; i <=10; i++){
 			string questName = directoryName + "/1_" + itoa(i) + "_*";
 			WIN32_FIND_DATA file;
@@ -643,19 +641,19 @@ void recover() {
 			Sleep(randInt(50,200));
 			updateShot();
 			Mat questRegion(*shotAsMat, questRegionRect);
-			vector<Point> next_quest_matches = f.findTemp(questRegion, quests[questNumber+1]);
-			assert (next_quest_matches.size()<=1);
-			if (next_quest_matches.size()==0){
+			vector<Point> nextQuestMatches = f.findTemp(questRegion, quests[questNumber+1]);
+			assert (nextQuestMatches.size()<=1);
+			if (nextQuestMatches.size()==0){
 				scrollQuestMenu(L"down", randInt(2,4));
 				Sleep(randInt(50,100));
 				updateShot();
 				questRegion = Mat(*shotAsMat,Rect(235,176,218,347));
-				next_quest_matches = f.findTemp(questRegion, quests[questNumber+1]);
-				assert (next_quest_matches.size()==1);
+				nextQuestMatches = f.findTemp(questRegion, quests[questNumber+1]);
+				assert (nextQuestMatches.size()==1);
 			}
 			desiredMatches = f.findTemp(questRegion, quests[questNumber]);
 			assert(desiredMatches.size()==1);
-			if ((next_quest_matches[0].y - desiredMatches[0].y) <18){
+			if ((nextQuestMatches[0].y - desiredMatches[0].y) <18){
 				cout<< "erorroror";	
 				Sleep(222222);
 				exit(1);
@@ -664,143 +662,135 @@ void recover() {
 				int subquest_x = questRegionX;
 				int subquest_y = questRegionY+desiredMatches[0].y;
 				int subquest_x_size = 35;
-				int subquest_y_size = next_quest_matches[0].y - desiredMatches[0].y;
+				int subquest_y_size = nextQuestMatches[0].y - desiredMatches[0].y;
 				Sleep(randInt(50,100));
 				updateShot();
-				Mat subquest_region(*shotAsMat, Rect(subquest_x, subquest_y, subquest_x_size, subquest_y_size));
-				vector<Point> bullet_point_matches = f.findTemp(subquest_region, bullet_point);
-				bullet_point_matches = f.segregateY(bullet_point_matches);
-				vector<Point> trophyMatches = f.findTemp(subquest_region, trophy);
+				Mat subquestRegion(*shotAsMat, Rect(subquest_x, subquest_y, subquest_x_size, subquest_y_size));
+				vector<Point> subquestMatches = f.findTemp(subquestRegion, bullet_point);
+				subquestMatches = f.segregateY(subquestMatches);
+				vector<Point> trophyMatches = f.findTemp(subquestRegion, trophy);
 				trophyMatches = f.segregateY(trophyMatches);
-				cout <<trophyMatches.size();
 				assert (trophyMatches.size() <=1);
-				if (bullet_point_matches.size()==0 && trophyMatches.size() ==0){
+				if (subquestMatches.size()==0 && trophyMatches.size() ==0){
 					MouseClick(L"left", questRegionX+desiredMatches[0].x, questRegionY+desiredMatches[0].y, 1, 9);
-
 					Sleep(randInt(50,100));
 					updateShot();
-					questRegion = Mat(*shotAsMat,questRegionRect);
-					
-					next_quest_matches = f.findTemp(questRegion, quests[questNumber+1]);
-					if (next_quest_matches.size()==0){
+					questRegion = Mat(*shotAsMat,questRegionRect);					
+					nextQuestMatches = f.findTemp(questRegion, quests[questNumber+1]);
+					if (nextQuestMatches.size()==0){
 						scrollQuestMenu(L"down", randInt(2,4));
 					}
-
 					Sleep(randInt(50,100));
 					updateShot();
-					questRegion = Mat(*shotAsMat,questRegionRect);
-					
-					next_quest_matches = f.findTemp(questRegion, quests[questNumber+1]);
-					assert (next_quest_matches.size()==1);
+					questRegion = Mat(*shotAsMat,questRegionRect);					
+					nextQuestMatches = f.findTemp(questRegion, quests[questNumber+1]);
+					assert (nextQuestMatches.size()==1);
 					desiredMatches = f.findTemp(questRegion, quests[questNumber]);
 					assert(desiredMatches.size()==1);
 					subquest_y = questRegionY+desiredMatches[0].y;
-					subquest_y_size = next_quest_matches[0].y - desiredMatches[0].y;
-					subquest_region=Mat(*shotAsMat, Rect(subquest_x, subquest_y, subquest_x_size, subquest_y_size));
-					bullet_point_matches = f.findTemp(subquest_region, bullet_point);
-					bullet_point_matches = f.segregateY(bullet_point_matches);
-					trophyMatches = f.findTemp(subquest_region, trophy);
+					subquest_y_size = nextQuestMatches[0].y - desiredMatches[0].y;
+					subquestRegion=Mat(*shotAsMat, Rect(subquest_x, subquest_y, subquest_x_size, subquest_y_size));
+					subquestMatches = f.findTemp(subquestRegion, bullet_point);
+					subquestMatches = f.segregateY(subquestMatches);
+					trophyMatches = f.findTemp(subquestRegion, trophy);
 					trophyMatches = f.segregateY(trophyMatches);
 					assert (trophyMatches.size() <=1);
 				}
-				if (trophyMatches.size() == 1 && bullet_point_matches.size() == 0 ){
-					bullet_point_matches = trophyMatches;
+				if (trophyMatches.size() == 1 && subquestMatches.size() == 0 ){
+					subquestMatches = trophyMatches;
 				}
 				else if (trophyMatches.size() == 1){
 					bool inserted = false;
-					for (int i =0; i<bullet_point_matches.size(); i++){
-						if (trophyMatches[0].y < bullet_point_matches[i].y){
-							vector<Point>::iterator bulletPointMatchesBegin = bullet_point_matches.begin();
-							bullet_point_matches.insert(bulletPointMatchesBegin+i,trophyMatches[0]);
+					for (int i =0; i<subquestMatches.size(); i++){
+						if (trophyMatches[0].y < subquestMatches[i].y){
+							vector<Point>::iterator bulletPointMatchesBegin = subquestMatches.begin();
+							subquestMatches.insert(bulletPointMatchesBegin+i,trophyMatches[0]);
 							inserted = true;
 							break;
 						}
 					}
 					if (inserted == false){
-						bullet_point_matches.push_back(trophyMatches[0]);
+						subquestMatches.push_back(trophyMatches[0]);
 					}
 				}
-				if (bullet_point_matches.size() < subquestNumber+1){
-					cout <<bullet_point_matches.size();
+				if (subquestMatches.size() < subquestNumber+1){
+					cout <<subquestMatches.size();
 					cout << subquestNumber+1;
 					cout<< "not enough lumber";
 					Sleep(222222);
 					exit(2);
 				}
-				MouseClick(L"left", subquest_x+bullet_point_matches[subquestNumber].x+30, subquest_y+bullet_point_matches[subquestNumber].y, 1, 9);
+				MouseClick(L"left", subquest_x+subquestMatches[subquestNumber].x+30, subquest_y+subquestMatches[subquestNumber].y, 1, 9);
 			}
 		}
 		else if(subquestNumber >0 && questNumber ==quests.size()-1){
 			Sleep(randInt(50,150));
 			updateShot();
 			Mat questRegion(*shotAsMat,questRegionRect);
-			Mat subquest_region;
-			vector<Point> desired_quest_matches = f.findTemp(questRegion, quests[questNumber]);
-			cout << desired_quest_matches.size();
-			assert(desired_quest_matches.size()==1);
+			Mat subquestRegion;
+			desiredMatches = f.findTemp(questRegion, quests[questNumber]);
+			assert(desiredMatches.size()==1);
 			int subquest_x = questRegionX;
-			int subquest_y = questRegionY+desired_quest_matches[0].y;
+			int subquest_y = questRegionY+desiredMatches[0].y;
 			int subquest_x_size = 35;
-			int subquest_y_size = questRegionYSize - desired_quest_matches[0].y;
-			vector<Point> bullet_point_matches;
+			int subquest_y_size = questRegionYSize - desiredMatches[0].y;
+			vector<Point> subquestMatches;
 			vector<Point> trophyMatches;
 			if (subquest_y_size < 18){
-				MouseClick(L"left", 235+desired_quest_matches[0].x, 176+desired_quest_matches[0].y, 1, 9);
+				MouseClick(L"left", 235+desiredMatches[0].x, 176+desiredMatches[0].y, 1, 9);
 			}
 			else{
-				subquest_region =Mat(*shotAsMat, Rect(subquest_x, subquest_y, subquest_x_size, subquest_y_size));
-				bullet_point_matches = f.findTemp(subquest_region, bullet_point);
-				bullet_point_matches = f.segregateY(bullet_point_matches);;
-				trophyMatches = f.findTemp(subquest_region, trophy);
+				subquestRegion =Mat(*shotAsMat, Rect(subquest_x, subquest_y, subquest_x_size, subquest_y_size));
+				subquestMatches = f.findTemp(subquestRegion, bullet_point);
+				subquestMatches = f.segregateY(subquestMatches);;
+				trophyMatches = f.findTemp(subquestRegion, trophy);
 				trophyMatches = f.segregateY(trophyMatches);
 				assert (trophyMatches.size() <=1);
-				if (bullet_point_matches.size() ==0 && trophyMatches.size() ==0){
-					MouseClick(L"left", questRegionX+desired_quest_matches[0].x, questRegionY+desired_quest_matches[0].y, 1, 9);
+				if (subquestMatches.size() ==0 && trophyMatches.size() ==0){
+					MouseClick(L"left", questRegionX+desiredMatches[0].x, questRegionY+desiredMatches[0].y, 1, 9);
 				}
 			}
 			Sleep(randInt(50,150));
 			updateShot();
 			questRegion= Mat(*shotAsMat,questRegionRect);
-			desired_quest_matches = f.findTemp(questRegion, quests[questNumber]);
-			cout << desired_quest_matches.size();
-			assert(desired_quest_matches.size()==1);
+			desiredMatches = f.findTemp(questRegion, quests[questNumber]);
+			assert(desiredMatches.size()==1);
 			subquest_x = 235;
-			subquest_y = 176+desired_quest_matches[0].y;
+			subquest_y = 176+desiredMatches[0].y;
 			subquest_x_size = 35;
-			subquest_y_size = 347 - desired_quest_matches[0].y;
-			subquest_region = Mat(*shotAsMat, Rect(subquest_x, subquest_y, subquest_x_size, subquest_y_size));
-			bullet_point_matches = f.findTemp(subquest_region, bullet_point);
-			bullet_point_matches = f.segregateY(bullet_point_matches);
-			
-			trophyMatches = f.findTemp(subquest_region, trophy);
+			subquest_y_size = 347 - desiredMatches[0].y;
+			subquestRegion = Mat(*shotAsMat, Rect(subquest_x, subquest_y, subquest_x_size, subquest_y_size));
+			subquestMatches = f.findTemp(subquestRegion, bullet_point);
+			subquestMatches = f.segregateY(subquestMatches);
+			trophyMatches = f.findTemp(subquestRegion, trophy);
 			trophyMatches = f.segregateY(trophyMatches);
 			assert (trophyMatches.size() <=1);
-			if (trophyMatches.size() == 1 && bullet_point_matches.size() == 0 ){
-				bullet_point_matches = trophyMatches;
+			if (trophyMatches.size() == 1 && subquestMatches.size() == 0 ){
+				subquestMatches = trophyMatches;
 			}
 			else if (trophyMatches.size() == 1){
 				bool inserted = false;
-				for (int i =0; i<bullet_point_matches.size(); i++){
-					if (trophyMatches[0].y < bullet_point_matches[i].y){
-						vector<Point>::iterator bulletPointMatchesBegin = bullet_point_matches.begin();
-						bullet_point_matches.insert(bulletPointMatchesBegin+i,trophyMatches[0]);
+				for (int i =0; i<subquestMatches.size(); i++){
+					if (trophyMatches[0].y < subquestMatches[i].y){
+						vector<Point>::iterator bulletPointMatchesBegin = subquestMatches.begin();
+						subquestMatches.insert(bulletPointMatchesBegin+i,trophyMatches[0]);
 						inserted = true;
 						break;
 					}
 				}
 				if (inserted == false){
-					bullet_point_matches.push_back(trophyMatches[0]);
+					subquestMatches.push_back(trophyMatches[0]);
 				}
 			}
-			assert (bullet_point_matches.size() >=1);
-			if (bullet_point_matches.size() < subquestNumber+1){
-				cout <<bullet_point_matches.size();
+			assert (subquestMatches.size() >=1);
+			if (subquestMatches.size() < subquestNumber+1){
+				cout <<subquestMatches.size();
 				cout << subquestNumber+1;
 				cout<< "not enough lumber";
 				Sleep(222222);
 				exit(2);
 			}
-			MouseClick(L"left", subquest_x+bullet_point_matches[subquestNumber].x+30, subquest_y+bullet_point_matches[subquestNumber].y, 1, 9);
+			MouseClick(L"left", subquest_x+subquestMatches[subquestNumber].x+30, subquest_y+subquestMatches[subquestNumber].y, 1, 9);
 		}
 		else{
 			cout << questNumber << " is invalid";
@@ -844,14 +834,14 @@ int main(int argn, char** argv)
 	//myBot.updateShot();
 	//myBot.saveSnapshot("mytest.png", 2000);
 	//return 0;
-	for (int i=0; i < 10; i++) {
-		myBot.killGhom();
-	}
+	//for (int i=0; i < 10; i++) {
+	//	myBot.killGhom();
+	//}
 	//myBot.updateShot();
 	//return 0;
 	//bool m = myBot.checkMouseWheel(Rect(235,176,218,347), L"down", 14);
 	//cout << m <<endl;
-//	myBot.selectQuest(22,2);
+	myBot.selectQuest(22,2);
 	//Sleep (5000);
 	//myBot.selectQuest(17);
 	//Sleep (5000);
