@@ -1,5 +1,6 @@
 #include "ItemFinder.hpp"
 #include "opencv.hpp"
+#include <time.h>
 using namespace cv;
 using namespace std;
 	static bool isWhite(Vec3b pixel) {
@@ -25,7 +26,8 @@ using namespace std;
 		diffHue = abs(hsvPixel[0] - 30);
 		diffSat = abs(hsvPixel[1] - 250);
 		int diffVal = 255 - hsvPixel[2];
-		if (diffHue <= 1 && diffSat <= 5 && diffVal <= 4) return true;
+		//if (diffHue <= 2 && diffSat <= 6 && diffVal <= 5) return true;
+		if (diffHue <= 2 && diffSat <= 6 && diffVal <= 75) return true;
 		return false;
 		////+- 1, +- 8
 	}
@@ -39,9 +41,12 @@ using namespace std;
 	}
 	ItemFinder::ItemFinder() {
 		//cout <<"hello"<<endl;
-		goldTemp = imread("gold.png", CV_LOAD_IMAGE_COLOR);
-		goldTemp = applyLim(goldTemp, isWhite);
-		goldTemp.convertTo(goldTemp, CV_32FC3);
+		Mat goldTempfull = imread("gold.png", CV_LOAD_IMAGE_COLOR);
+		goldTempfull = applyLim(goldTempfull, isWhite);
+		goldTempfull.convertTo(goldTempfull, CV_32FC3);
+		vector<Mat> tempPlanes;
+		split(goldTempfull, tempPlanes);
+		goldTemp = tempPlanes[0].clone();
 
 		endTemp = imread("questend.png", CV_LOAD_IMAGE_COLOR);
 	//	endTemp.convertTo(endTemp, CV_32FC3);
@@ -69,28 +74,10 @@ using namespace std;
 		Mat tempRegion(invTemp, Rect(colLocs[c], rowLocs[r], 27, 27));
 		Mat imRegion(shot, Rect(921 + colLocs[c], 397 + rowLocs[r], 27, 27));
 		double score = correlate(tempRegion, imRegion);
+		//cout<<score<<endl;
 	//	cout << score;
-		if (score > 0.8) return true;
+		if (score > 0.9) return true;
 		return false;
-	}
-
-	void ItemFinder::checkInv(Mat shot) {
-		//Mat test = imread("inv.png", CV_LOAD_IMAGE_COLOR);
-		//Mat temp(test, Rect(921, 397, 330, 196));
-		int leftX = 921;
-		int topY = 397;
-
-		for (int r = 0; r < 6; r++) {
-			for (int c = 0; c < 10; c++) {
-				Mat refRegion(invTemp, Rect(32.78*c, 32.4*r, 31, 31));
-
-				Mat region(shot, Rect(leftX + 32.78*c, topY + 32.4*r, 31, 31));
-				double score = correlate(region, refRegion);
-				//cout << score << endl;
-			}
-		}
-		//invTemp.convertTo(invTemp, CV_32FC3);
-		//findTemp(shot, invTemp);
 	}
 
 	Mat ItemFinder::applyLim(Mat original, bool (*isValid)(Vec3b)) {
@@ -116,13 +103,55 @@ using namespace std;
 	bool ItemFinder::questEnded(Mat shot) {
 		Mat finishRegion(shot, Rect(492, 507, 277, 136));
 		double score = correlate(finishRegion, endTemp);
-	//	cout << score << endl;
-		//imshow("finish region", finishRegion);
-		//waitKey(0);
 		if (score > 0.95) return true;
 		return false;
 	}
-
+	bool ItemFinder::isScreenSeen(Mat shot, int what, double thres) {
+		Mat region;
+		Mat temp;
+		switch(what) {
+		case OK_SCREEN:
+			region = shot(Rect(475,275,314,184));
+			temp = imread("ok_screen.png");
+			break;
+		case GAME_START_SCREEN:
+			region = shot(Rect(48, 313, 220,33));
+			temp=imread("game_start_screen.png");
+			break;
+		case MENU_SCREEN:
+			region = shot(Rect(230,460,292,64));
+			temp = imread("menu_screen.png");
+			break;
+		case KEEP0_SCREEN:
+			region = shot(Rect(240,665, 83,65));
+			temp = imread("keep0_screen.png");
+			break;
+		case WAYPOINT_SCREEN:
+			region = shot(Rect(30,110,270,210));
+			temp = imread("waypoint_screen.png");
+			break;
+		case KEEP_LEVEL3_SCREEN:
+			region = shot(Rect(1075,8,173,10));
+			temp = imread("keep_level3_screen.png");
+			break;
+		case LARDER_SCREEN:
+			region = shot(Rect(1168,8,79,10));
+			temp = imread("larder_screen.png");
+			break;
+		case END_KEEP_SCREEN:
+			region = shot(Rect(1051,8,68,10));
+			temp = imread("end_keep_screen.png");
+			break;
+		case EARLY_ABORT_MENU_SCREEN:
+			region = shot(Rect(230,415,145,107));
+			temp = imread("early_abort_menu_screen.png");
+			break;
+		};
+		double score = correlate(region, temp);
+		//cout << score << endl;
+		if (score > thres) return true;
+		return false;
+	}
 
 	vector<Point> ItemFinder::segregateY(vector<Point> original, int minDist) {
 		vector<Point> result;
@@ -131,7 +160,8 @@ using namespace std;
 			if (result.size() == 0) result.push_back(original[i]);
 			else {
 				Point back = result.back();
-				if (abs(back.y - original[i].y) > minDist) result.push_back(original[i]);
+				if (abs(back.y - original[i].y) > minDist) 
+					result.push_back(original[i]);
 			}
 		}
 		return result;
@@ -142,31 +172,15 @@ using namespace std;
 		shot.convertTo(floatingPoint, CV_32FC3);
 		temp.convertTo(temp, CV_32FC3);
 		Mat result;
-		//cout << "template matching started" << endl;
 		matchTemplate(floatingPoint, temp, result, CV_TM_CCOEFF_NORMED);
-
-		//imshow("result", result);
+		imwrite("diablo9_result.png",255*result);
+	//	imshow("result", result);
 		//waitKey(0);
-
-		//cout << "template matching ended" << endl;
-		//imshow("result", result);
-		//imwrite("invresult.png", 255*result);
-		//waitKey(0);
-
-		//imwrite("resultgoldpos2.png", 255*result);
-		//cout << shot.rows << " " << shot.cols<<endl;
-		//cout << temp.rows << " " << temp.cols<<endl;
-		//cout << result.rows << " " << result.cols<<endl;
 		vector<Point> locs;
 		for (int r = 0; r < result.rows; r++) {
 			float* ptr = result.ptr<float>(r);
 			for (int c = 0; c < result.cols; c++) {
-				//cout << ptr[c] << endl;
 				if (ptr[c] > thres) {
-
-					//cout << "I found a value of " << ptr[c] << endl;
-					//cout << "but my thres is " << thres << endl;
-
 					int midMatchRow = r + temp.rows/2;
 					int midMatchCol = c + temp.cols/2;
 					locs.push_back(Point2i(midMatchCol, midMatchRow));
@@ -200,8 +214,8 @@ using namespace std;
 		Mat distances;
 		distanceTransform(binary, distances, CV_DIST_L2,  5);
 
-	//	imwrite("distances2.png", distances);
-		//imshow("distances", binary);
+	////	imwrite("distances2.png", distances);
+		//imshow("distances", distances);
 		//waitKey(0);
 
 		Point* bestPoint = NULL;
@@ -216,9 +230,9 @@ using namespace std;
 					count++;
 				}
 			}
-			if (count > 50 && count > bestCount) {
+			if (count > 45 && count > bestCount) {
 				bestCount = count;
-				int col = pixelLocs.size()/2;
+				int col = (int) pixelLocs.size()/2;
 				bestPoint = new Point(pixelLocs[col], r);
 			}
 		}
@@ -250,20 +264,99 @@ using namespace std;
 		Mat hsvRegion;
 		cvtColor(region, hsvRegion, CV_BGR2HSV);
 		Mat filtered = applyLim(hsvRegion, isRed);
-		//filtered.convertTo(filtered, CV_32FC3);
-		//imshow("filtered", filtered);
-		//imshow("template", hateDepletedTemp);
-		//waitKey(0);
 		double score = correlate(filtered, hateDepletedTemp);
-		//cout << score << enl;
-
-		//return false;
 		return (score > 0.8);
 	}
-	vector<Point> ItemFinder::findGold(Mat shot, double thres) {
-		Mat filtered = applyLim(shot, isWhite);
-		return findTemp(shot, goldTemp, 0.7);
+
+	bool ItemFinder::couldNotSell(Mat shot) {
+		Mat temp = imread("cannot_be_sold_temp.png");
+		cvtColor(temp, temp, CV_BGR2HSV);
+		temp = applyLim(temp, isRed);
+		Mat region(shot,Rect(552,92,157,13));
+		Mat hsvRegion;
+		cvtColor(region, hsvRegion, CV_BGR2HSV);
+		Mat filtered = applyLim(hsvRegion, isRed);
+	//	imshow("filtered", filtered);
+	//	imshow("temp", temp);
+	//	cout << correlate(filtered, temp) << endl;
+	//	waitKey(0);
+		return correlate(filtered, temp) > 0.8;
 	}
+
+	vector<Point> ItemFinder::findAllGold(Mat shot) {
+		Mat filtered = applyLim(shot, isWhite);
+		Mat temp = imread("gold.png");
+		temp = applyLim(temp, isWhite);
+		return findTemp(shot, temp, 0.7);
+	}
+	/*
+	Point* ItemFinder::findGold(Mat shot, double thres) {
+		shot = applyLim(shot, isWhite);
+		Mat floatingPoint;
+		shot.convertTo(floatingPoint, CV_32FC3);
+		goldTemp.convertTo(goldTemp, CV_32FC3);
+
+		Mat searchRegion = floatingPoint(Rect(450,60,572,462));
+		Mat result;
+		cout<<"matching";
+		matchTemplate(searchRegion, goldTemp, result, CV_TM_CCOEFF_NORMED);
+		cout<<"matching end"<<endl;
+		imshow("searchreg", searchRegion);
+		imshow("temp", goldTemp);
+		imshow("result",result);
+		waitKey(0);
+		Point* bestLoc = NULL;
+		double bestScore = -1;
+
+		for (int r = 0; r < result.rows; r++) {
+			float* ptr = result.ptr<float>(r);
+			for (int c = 0; c < result.cols; c++) {
+				if (ptr[c] > thres)cout << "score" << ptr[c] << endl;
+				if (ptr[c] > bestScore && ptr[c] > thres) {
+					cout << bestScore << endl;
+					int midMatchRow = 60 + r + goldTemp.rows/2;
+					int midMatchCol = 450 + c + goldTemp.cols/2;
+					bestLoc = new Point(midMatchCol, midMatchRow);
+					bestScore = ptr[c];	
+				}
+			}
+		}
+		return bestLoc;
+	}*/
+
+	Point* ItemFinder::findGold(Mat shot, double thres) {
+		cout<<"finding gold"<<endl;
+		Mat searchRegion = shot(Rect(450, 60, 572, 462));
+		Mat greyscale(462,572,CV_32FC1);
+		for (int r=0; r < searchRegion.rows; r++) {
+			Vec3b* ptr = searchRegion.ptr<Vec3b>(r);
+			float* greyPtr = greyscale.ptr<float>(r);
+			for (int c=0; c < searchRegion.cols; c++) {
+				if (isWhite(ptr[c])) greyPtr[c] = ptr[c][0];
+				else greyPtr[c]=0;
+			}
+		}
+		Mat result;
+		//vector<Mat> testplanes;
+		matchTemplate(greyscale, goldTemp, result, CV_TM_CCOEFF_NORMED);
+		Point* bestLoc = NULL;
+		double bestScore = -1;
+
+		for (int r = 0; r < result.rows; r++) {
+			float* ptr = result.ptr<float>(r);
+			for (int c = 0; c < result.cols; c++) {
+				if (ptr[c] > bestScore && ptr[c] > thres) {
+					//cout << bestScore << endl;
+					int midMatchRow = 60 + r + goldTemp.rows/2;
+					int midMatchCol = 450 + c + goldTemp.cols/2;
+					bestLoc = new Point(midMatchCol, midMatchRow);
+					bestScore = ptr[c];	
+				}
+			}
+		}
+		return bestLoc;
+	}
+
 	bool ItemFinder::exitMenuSeen(Mat shot) {
 		Mat region(shot, Rect(510, 207, 245, 250));
 		double score = correlate(region, endmenuTemp);
@@ -271,27 +364,29 @@ using namespace std;
 	//	imshow("region", region);
 		//waitKey(0);
 		//cin.get();
+		
 		return score > 0.9;
 	}
 
-	bool isSeen(Mat shot, int what) {
-		Mat region;
-		Mat temp;
-		switch(what) {
-		case 0:
-			temp = imread("changequest.png", CV_LOAD_IMAGE_COLOR);
-			region = shot(Rect(417, 314, temp.cols, temp.rows));
-			break;
-		case 1:
-			temp = imread("questselect.png", CV_LOAD_IMAGE_COLOR);
-			region = shot(Rect(229, 172, temp.cols, temp.rows));
-			break;
-
-		}
-		return false;
-	}
 int main3(int argn, char** argv) {
-
+	ItemFinder f;
+	Mat shot = imread("diablo9.png");
+	Mat temp = imread("diablo_temp.png");
+	f.findTemp(shot, temp);
+	cout << "started" << (double)clock()/CLOCKS_PER_SEC << endl;
+	//f.findGold2(shot);
+//	f.nextItem(shot);
+	cout << "ended" << (double)clock()/CLOCKS_PER_SEC << endl;
+//	Sleep(200000);
+	/*Mat shot = imread("invtest.png");
+	for (int r=0; r < 5; r++) {
+		for (int c=0; c < 10; c++) {
+			f.invSpotEmpty(shot,r,c);
+		}
+	}
+	cout << f.invSpotEmpty(shot,0,1) << endl;
+	Sleep(1000000);
+	f.couldNotSell(shot);*/
 	return 0;
 }
 

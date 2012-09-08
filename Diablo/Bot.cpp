@@ -74,7 +74,7 @@ class Bot {
 	static const int DISCIPLINE_THRES = 12;
 	//special saturation threshold for health
 	static const int HEALTH_SAT_THRES = 20;
-
+	enum{IM_TO_MAP, MAP_TO_IM};
 	ItemFinder f;
 public:
 	bool* isColorInDisc;
@@ -85,7 +85,7 @@ public:
 	CvKNearest finder;
 //public:
 	Bot(HWND handle) {
-		srand(time(NULL));
+		srand((unsigned int)time(NULL));
 		//vector<int> colors;
 		colorFreq = (int*) calloc(256*256*256, sizeof(int));
 		numUsed = 0;
@@ -216,7 +216,7 @@ public:
 		return 1;
 	}
 
-	void saveSnapshot(string filename, int sleepTime) {
+	void screenshot(string filename, int sleepTime) {
 		/*Calls updateShot(), after sleepTime milliseconds, and saves the
 		resulting snapshot as screenshot.png */
 		Sleep(sleepTime);
@@ -239,7 +239,7 @@ public:
 			return;
 		}
 		BYTE* dest = (BYTE*) shotAsMat->data;
-		for (int y = 0; y < source.Height; y++) {
+		for (size_t y = 0; y < source.Height; y++) {
 			BYTE* src = (BYTE*) source.Scan0 + y * source.Stride;
 			BYTE* dst = (BYTE*) (dest + y * shotAsMat->step);
 			memcpy(dst, src, 3*source.Width);
@@ -247,31 +247,18 @@ public:
 		shotBitmap.UnlockBits(&source);
 	}
 
-
-
-	vector<Point> findGold(Mat shot, float thres = 0.6) {
-		Mat floatingPoint;
-		shot.convertTo(floatingPoint, CV_32FC3);
-		Mat result;
-		matchTemplate(floatingPoint, goldTemp, result, CV_TM_CCOEFF_NORMED);
-		imwrite("resultgoldpos.png", 255*result);
-		vector<Point> goldLocs;
-		for (int r = 0; r < HEIGHT; r++) {
-			float* ptr = result.ptr<float>(r);
-			for (int c = 0; c < WIDTH; c++) {
-				if (ptr[c] > thres) goldLocs.push_back(Point2i(r, c));
-			}
-		}
-		return goldLocs;
-	}
-
 	int randInt(int lower, int upper) {
 		int range = upper - lower + 1;
 		return rand()%range + lower;
 	}
 
+	void sendKey(string key, int holdMin, int holdMax) {
+	//	Send(L"{"+key+L" down}", 0);
+		Send(L"{ESC down}", 0);
+	}
+
 	void moveAndClick(int leftx, int topy, int rightx, int boty, 
-		double holdMin, double holdMax, LPCWSTR button = L"left") {
+		int holdMin, int holdMax, LPCWSTR button = L"left") {
 		int x = randInt(leftx, rightx);
 		int y = randInt(topy, boty);
 		int moveSpeed = randInt(9, 13);
@@ -281,7 +268,7 @@ public:
 	}
 
 	void moveAndHold(int leftx, int topy, int rightx, int boty, 
-		double holdMin, double holdMax, bool mouseUp = true, 
+		int holdMin, int holdMax, bool mouseUp = true, 
 		LPCWSTR button = L"left") {
 			int x = randInt(leftx, rightx);
 			int y = randInt(topy, boty);
@@ -297,8 +284,8 @@ public:
 		//true on successful find of box, false otherwise
 		for (double theta = 0; theta < 3*2*CV_PI; theta += 0.2) {
 			double r = b*theta;
-			double x = x0 + r*cos(theta);
-			double y = y0 + r*sin(theta);
+			int x = (int) (x0 + r*cos(theta));
+			int y = (int) (y0 + r*sin(theta));
 			int speed = randInt(4, 8);
 			MouseMove(x, y, speed);
 			updateShot();
@@ -323,7 +310,6 @@ public:
 
 	bool goToSupplyChest() {
 		//return true if successful, false if not
-		//ItemFinder f;
 		int x = randInt(59, 69);
 		int y = randInt(240, 249);
 		int moveSpeed = randInt(10, 15);
@@ -331,27 +317,18 @@ public:
 		MouseDown(L"left");
 		
 		double startTime = (double) clock()/CLOCKS_PER_SEC;
-		cout << "startime is" << startTime << endl;
-		//bool found = true;
 		while((double) clock()/CLOCKS_PER_SEC - startTime < 4) {
-		//	cout << clock() << endl;
 			updateShot();
 			Mat region(*shotAsMat, Rect(0, 140, 220, 100));
 			if (f.boxExists(region)) {
-		//		cout <<"box exists" << endl;
 				MouseUp(L"left");
 				MouseClick(L"left", x, y, 1, 1);
 				Sleep(3000);
 				return true;
 			}
 		}
-
 		MouseUp(L"left");
-		//return false;
-		//MouseUp(
-		return SpiralSearch(177, 250);
-		//moveAndHold(59, 240, 69, 249, 500, 700);
-		//return false;
+		return SpiralSearch(700, 400);
 	}
 
 	double getTime() {
@@ -361,164 +338,24 @@ public:
 void recover() {
 		cout << "recover called" << endl;
 		//true on success, false on failure
-		updateShot();
+		//updateShot();
 		Send(L"{ESC down}", 0);
-		Sleep(randInt(200, 300));
+		Sleep(randInt(300, 500));
 		Send(L"{ESC up}", 0);
 		Sleep(randInt(1000, 1600));
 		updateShot();
 		if (!f.exitMenuSeen(*shotAsMat)) exit(-1);
-		moveAndClick(623, 386, 689, 397, 1500, 18000); //click "leave game"
+		moveAndClick(623, 386, 689, 397, 1500, 1800); //click "leave game"
+		waitTillSeen(f.GAME_START_SCREEN);
 	}
-
-
-	void killGhom() {
-		ItemFinder f;
-		moveAndClick(95, 320, 236, 336, 200, 250); //change quest
-		//moveAndClick(291, 438, 424, 442, 200, 250); //breached keep
-		//moveAndClick(280, 517, 384, 520, 200, 250); //kill ghom
-		selectQuest(22, 2);
-		moveAndClick(845, 586, 845, 586, 200, 250); //click "Select Quest"
-
-		moveAndClick(533, 423, 580, 431, 300, 350); //click OK
-		moveAndClick(179, 278, 233, 289, 8000, 9000); //click "Start Game"
-
-
-		moveAndClick(418, 349, 445, 368, 1300, 1420); //click on waypoint
-		moveAndClick(122, 291, 222, 299, 2200, 2500); //go to keep 3
-
-		moveAndClick(1062, 154, 1082, 197, 2000, 2500); //enter larder
-		moveAndHold(918, 130, 923, 145, 7000, 9000); //walk in larder
-		//click escape
-		Send(L"{SPACE down}", 0);
-		Sleep(randInt(50, 100));
-		Send(L"{SPACE up}", 0);
-		moveAndClick(541, 245, 584, 256, 1000, 1900); //click "OK"
-		moveAndHold(913, 133, 934, 152, 0, 0, false, L"right"); //right click on Ghom
-		double endTime = getTime() + 20;
-		//cout << "Start time: " << startTime << endl;
-		while (getTime() < endTime) {
-			bool finished = false;
-			MouseDown(L"right");
-			while(!f.hatredDepleted(*shotAsMat) && 
-				getTime() < endTime) {
-				updateShot();
-				if (f.questEnded(*shotAsMat)) {
-					finished = true;
-					break;
-				}
-			}
-			Sleep(randInt(50, 100));
-			MouseUp(L"right");
-			if (finished) break;
-			//cout << getTime() << endl;
-			double leftClickEndTime = getTime() + randInt(60, 100)/10.0;
-			leftClickEndTime = min(leftClickEndTime, endTime);
-			//double leftClickTime = (double) randInt(60, 100)/10;
-			Send(L"{LSHIFT down}", 0);
-			Sleep(randInt(50,100));
-			moveAndHold(738, 223, 761, 242, 0, 0, false);
-			while(getTime() < leftClickEndTime) {
-				updateShot();
-				if (f.questEnded(*shotAsMat)) {
-					finished = true;
-					break;
-				}
-			}
-			MouseUp(L"left");
-			if (finished) break;
-			Sleep(randInt(50,100));
-		}
-		//if (!f.questEnded(*shotAsMat)) exit(-1);
-		Send(L"{LSHIFT up}", 0);
+	
+	void waitTillSeen(int what, double thres=0.95) {
 		updateShot();
-		//imshow("shot", *shotAsMat);
-		//waitKey(0);
-		if (!f.questEnded(*shotAsMat)) {
-			cout << "quest ended returned false" << endl;
-			recover(); return;
-		}
-		moveAndClick(646, 620, 704, 631, 200, 300);
-		//don't fool around picking things up for more than 10 seconds
-		double startPickTime = getTime();
-		Point* p;
-		int n=0;
-		
-		do {
+		while(!f.isScreenSeen(*shotAsMat, what, thres)) {
 			updateShot();
-			//stringstream ss;
-			//ss << "itemsave" << n << ".png";
-			//n++;
-			//imwrite("items.png", *shotAsMat);
-			//exit(-1);
-			p = f.nextItem(*shotAsMat);
-			if (p != NULL) {
-				int leftx = p->x - 6;
-				int topy = p->y - 3;
-				assert(leftx > 0 && topy > 0);
-				moveAndClick(leftx, topy, leftx + 12, topy + 3, 300, 350);
-			}
-		} while(p != NULL && getTime() - startPickTime < 20);
-		//now pick up gold
-		vector<Point> goldLocs;
-		do {
-			updateShot();
-			goldLocs = f.findGold(*shotAsMat);
-			if (goldLocs.size() != 0) {
-				Point p = goldLocs[0];
-				int leftx = p.x - 7;
-				int topy = p.y - 4;
-				assert(leftx > 0 && topy > 0);
-				moveAndClick(leftx, topy, leftx + 14, topy + 8, 100, 250);
-			}
-		} while(goldLocs.size() != 0 &&
-			getTime() - startPickTime < 20);
-		Send(L"{t down}", 0);
-		Sleep(randInt(100, 160));
-		Send(L"{t up}", 0);
-		Sleep(randInt(8500, 9500));
-		cout <<"aaaaa";
-		cout <<getTime();
-		bool success = goToSupplyChest();
-		cout<<"bbb";
-		if (!success) {
-			recover(); 
-			return;
+			Sleep(100);
 		}
-		cout<<"cc"<<endl;
-		moveAndClick(457, 299, 471, 315, 700, 800);
-		cout<<"dd"<<endl;
-		//sell items
-		Sleep(randInt(600,1000));
-		updateShot();
-		//imwrite("inv3.png", *shotAsMat);
-		//exit(-1);
-		for (int r = 0; r < 1; r++) {
-			for (int c = 0; c < 10; c++) {
-				if (r==0 && c==0) continue;
-				if (!f.invSpotEmpty(*shotAsMat, r, c)) {
-					//updateShot();
-					int leftx = 921 + 32.78*c + 5;
-					int topy = 397 + 32.4*r + 5;
-					moveAndClick(leftx, topy, leftx + 20, topy + 20,
-						100, 200, L"right");
-				}
-			}
-		}
-		Send(L"{ESC down}", 0);
-		Sleep(randInt(150, 200));
-		Send(L"{ESC up}", 0);
-		updateShot();
-		if (!f.exitMenuSeen(*shotAsMat)) {
-			//otherwise, something went wrong
-			Send(L"{ESC down}", 0);
-			Sleep(randInt(50, 100));
-			Send(L"{ESC up}", 0);
-		}
-		else { recover(); return; }
-		moveAndClick(623, 386, 689, 397, 4500, 6000); //click "leave game"
-		//Sleep(2000);
-
+		Sleep(700);
 	}
 
 
@@ -552,7 +389,6 @@ void recover() {
 		}
 	}
 
-
 	void scrollQuestMenu(LPCWSTR direction, long clicks){
 		int questRegionX = 235;
 		int questRegionY = 176;
@@ -567,8 +403,8 @@ void recover() {
 		}
 	}
 
-
 	bool selectQuest(int questNumber, int subquestNumber){
+		cout<<"selecting quest"<<endl;
 		int questRegionX = 235;
 		int questRegionY = 176;
 		int questRegionXSize = 218;
@@ -691,7 +527,7 @@ void recover() {
 					questRegion = Mat(*shotAsMat,questRegionRect);
 					
 					next_quest_matches = f.findTemp(questRegion, quests[questNumber+1]);
-					assert (next_quest_matches.size()==1);
+					assert (next_quest_matches.size()==1); //sometimes returns 0???
 					desiredMatches = f.findTemp(questRegion, quests[questNumber]);
 					assert(desiredMatches.size()==1);
 					subquest_y = questRegionY+desiredMatches[0].y;
@@ -816,19 +652,268 @@ void recover() {
 		Gdiplus::GdiplusShutdown(gdiToken);
 		delete shotAsMat;
 	}
+	Vec2f convertPoint(float x, float y, int direction=IM_TO_MAP) {
+		Mat camera = (Mat_<float>(3,3) <<1079,0,631.5,0,1079,364.5,0,0,1);
+		Mat RT = (Mat_<float>(3,3) <<1,0,0,0,cos(0.8),0,0,-sin(0.8),58);
+		Mat transform;
+		if (direction==IM_TO_MAP)
+			transform = (camera*RT).inv();
+		else if (direction==MAP_TO_IM)
+			transform = camera*RT;
+		else assert(false);
+		Mat p = (Mat_<float>(3,1) << x,y,1);
+		Mat transPoint = transform*p;
+		float s = transPoint.at<float>(2,0);
+		float resultX = transPoint.at<float>(0,0)/s;
+		float resultY = transPoint.at<float>(1,0)/s;
+		return Vec2f(resultX, resultY);
+	}
+	
+	double getDist(float x, float y) {
+		Vec2f mapPoint = convertPoint(x, y, IM_TO_MAP);
+		return sqrt(mapPoint[0]*mapPoint[0] + mapPoint[1]*mapPoint[1]);
+	}
+	
+	void identifyRare(int x, int y) {
+		Send(L"{ESC down}", 0);
+		Sleep(randInt(150, 200));
+		Send(L"{ESC up}", 0);
+
+		Send(L"{i down}", 0);
+		Sleep(randInt(150, 200));
+		Send(L"{i up}", 0);
+		moveAndClick(x, y, x, y, 3500, 4500, L"right");
+		Send(L"{ESC down}", 0);
+		Sleep(randInt(150, 200));
+		Send(L"{ESC up}", 0);
+		moveAndClick(525,275,547,318,300,500);
+	}
+
+	void collectGold(vector<Point> locs) {
+		//get map coordinates for gold
+		vector<Vec2f> mapLocs;
+		for (int i=0; i < locs.size(); i++) {
+			mapLocs.push_back(convertPoint(locs[i].x, locs[i].y, IM_TO_MAP));
+		}
+		//initialize position to 0
+		int xpos = 0;
+		int ypos = 0;
+		//while gold locs isn't empty:
+		while(!mapLocs.empty()) {
+			//pop 1 from locs
+			Vec2f newGold = mapLocs.back();
+			mapLocs.pop_back();
+			//predict position on image based on own pos, go there
+			Vec2f imPoint = convertPoint(newGold[0]-xpos, newGold[1]-ypos, MAP_TO_IM);
+			int leftx = (int) imPoint[0] - 14;
+			int topy = (int) imPoint[1] + 11;
+			assert(leftx > 0 && topy > 0);
+			int waitTime = 60*(int)(getDist(imPoint[0], imPoint[1])) + 2000;
+		//		moveAndClick(leftx, topy, leftx + 12, topy + 3, 
+			//		waitTime, waitTime+200);
+			moveAndClick(leftx, topy, leftx, topy,
+				waitTime, waitTime+200);
+			//update position
+			//I clicked leftx, topy, which represents position:
+			Vec2f mapPoint = convertPoint(leftx, topy, IM_TO_MAP);
+			xpos += mapPoint[0];
+			ypos += mapPoint[1];
+
+		}
+	}
+
+	void killGhom() {
+		moveAndClick(95, 320, 236, 336, 200, 250); //change quest
+		Sleep(randInt(400,700));
+		updateShot();
+		//menu as expected? if so, just click
+		if (f.isScreenSeen(*shotAsMat, f.MENU_SCREEN)) {
+			moveAndClick(291, 438, 424, 442, 200, 250); //breached keep
+			moveAndClick(280, 517, 384, 520, 200, 250); //kill ghom
+		}
+		//already in quest?
+		else if (f.isScreenSeen(*shotAsMat, f.EARLY_ABORT_MENU_SCREEN)) {
+			cout<<"already in quest"<<endl;
+			selectQuest(23,0);
+			moveAndClick(845, 586, 845, 586, 200, 250); //click "Select Quest"
+			waitTillSeen(f.OK_SCREEN);
+			moveAndClick(533, 423, 580, 431, 300, 350); //click OK
+			waitTillSeen(f.GAME_START_SCREEN);
+			moveAndClick(179, 278, 233, 289, 0, 100); //click "Start Game"
+			waitTillSeen(f.KEEP0_SCREEN);
+			Sleep(randInt(1000,1500));
+			//press Esc once to end Azmodan conversation
+			Send(L"{ESC down}", 0);
+			Sleep(randInt(150, 200));
+			Send(L"{ESC up}", 0);
+			recover();
+			killGhom();
+			return;
+		}
+		else selectQuest(22, 2);
+		moveAndClick(845, 586, 845, 586, 200, 250); //click "Select Quest"
+		waitTillSeen(f.OK_SCREEN);
+		moveAndClick(533, 423, 580, 431, 300, 350); //click OK
+		waitTillSeen(f.GAME_START_SCREEN);
+		moveAndClick(179, 278, 233, 289, 0, 100); //click "Start Game"
+		waitTillSeen(f.KEEP0_SCREEN);
+		Sleep(randInt(200,500));
+		moveAndClick(418, 349, 445, 368, 0, 100); //click on waypoint
+		waitTillSeen(f.WAYPOINT_SCREEN);
+		moveAndClick(122, 291, 222, 299, 0, 100); //go to keep 3
+		waitTillSeen(f.KEEP_LEVEL3_SCREEN);
+		moveAndClick(1062, 154, 1082, 197, 0, 100); //enter larder
+		waitTillSeen(f.LARDER_SCREEN);
+		moveAndHold(918, 130, 923, 145, 7000, 9000); //walk in larder
+		//click escape
+		Send(L"{SPACE down}", 0);
+		Sleep(randInt(50, 100));
+		Send(L"{SPACE up}", 0);
+		moveAndClick(541, 245, 584, 256, 1000, 1900); //click "OK"
+		moveAndHold(913, 133, 934, 152, 0, 0, false, L"right"); //right click on Ghom
+
+		double endTime = getTime() + 20;
+		while (getTime() < endTime) {
+			bool finished = false;
+			MouseDown(L"right");
+			while(!f.hatredDepleted(*shotAsMat) && 
+				getTime() < endTime) {
+				updateShot();
+				if (f.questEnded(*shotAsMat)) {
+					finished = true;
+					break;
+				}
+			}
+
+			Sleep(randInt(50, 100));
+			MouseUp(L"right");
+			if (finished) break;
+
+			Send(L"{1 down}", 0);
+			Sleep(randInt(100, 400));
+			Send(L"{1 up}", 0);
+			Send(L"{1 down}", 0);
+			Sleep(randInt(100, 400));
+			Send(L"{1 up}", 0);
+
+			double leftClickEndTime = getTime() + randInt(60, 100)/10.0;
+			leftClickEndTime = min(leftClickEndTime, endTime);
+			Send(L"{LSHIFT down}", 0);
+			Sleep(randInt(50,100));
+			moveAndHold(738, 223, 761, 242, 0, 0, false);
+			while(getTime() < leftClickEndTime) {
+				updateShot();
+				if (f.questEnded(*shotAsMat)) {
+					finished = true;
+					break;
+				}
+			}
+			MouseUp(L"left");
+			if (finished) break;
+			Sleep(randInt(50,100));
+		}
+		Send(L"{LSHIFT up}", 0);
+		updateShot();
+		if (!f.questEnded(*shotAsMat)) {
+			cout << "quest ended returned false" << endl;
+			recover(); return;
+		}
+		moveAndClick(646, 620, 704, 631, 200, 300);
+		//don't fool around picking things up for more than 10 seconds
+		double startPickTime = getTime();
+		Point* p;
+		int n=0;
+		
+		do {
+			updateShot();
+			p = f.nextItem(*shotAsMat);
+			if (p != NULL) {
+				int leftx = p->x - 6;
+				int topy = p->y - 3;
+				assert(leftx > 0 && topy > 0);
+				int waitTime = 60*(int)getDist(p->x, p->y) + 100;
+				moveAndClick(leftx, topy, leftx + 12, topy + 3, 
+					waitTime, waitTime+200);
+			}
+		} while(p != NULL && getTime() - startPickTime < 20);
+		//now pick up gold
+		
+		Point* goldLoc = NULL;
+		do {
+			updateShot();
+			goldLoc = f.findGold(*shotAsMat);
+			if (goldLoc != NULL) {
+				int leftx = goldLoc->x - 7;
+				int topy = goldLoc->y - 4;
+				assert(leftx > 0 && topy > 0);
+				int waitTime = 60*(int)getDist(goldLoc->x, goldLoc->y) + 100;
+				moveAndClick(leftx, topy, leftx + 14, topy + 8,
+					waitTime, waitTime+200);
+			}
+		} while(goldLoc != NULL && getTime() - startPickTime < 20);
+		
+		//updateShot();
+		//vector<Point> allGold = f.findAllGold(*shotAsMat);
+		//collectGold(allGold);
+		Send(L"{t down}", 0);
+		Sleep(randInt(100, 160));
+		Send(L"{t up}", 0);
+		waitTillSeen(f.END_KEEP_SCREEN);
+		Sleep(randInt(300, 400));
+		bool success = goToSupplyChest();
+		if (!success) {
+			recover(); 
+			return;
+		}
+		moveAndClick(457, 299, 471, 315, 700, 800);
+		//sell items
+		Sleep(randInt(600,1000));
+		updateShot();
+		Mat refShot = (*shotAsMat).clone();
+		for (int r = 0; r < 5; r++) {
+			for (int c = 0; c < 10; c++) {
+				if (r==0 && c==0) continue;
+				if (r != 0 && c != 0) continue;
+				if (!f.invSpotEmpty(refShot, r, c)) {
+					//updateShot();
+					int leftx = 921 + (int)32.78*c + 5;
+					int topy = 397 + (int)32.4*r + 5;
+					moveAndClick(leftx, topy, leftx + 20, topy + 20,
+						200, 300, L"right");
+					updateShot();
+					if (f.couldNotSell(*shotAsMat)) {
+						identifyRare(leftx + randInt(0,20), 
+							topy + randInt(0,20));
+						moveAndClick(leftx, topy, leftx + 20, topy + 20,
+							100, 200, L"right");
+					}
+				}
+			}
+		}
+		
+		Send(L"{ESC down}", 0);
+		Sleep(randInt(150, 200));
+		Send(L"{ESC up}", 0);
+		updateShot();
+		if (!f.exitMenuSeen(*shotAsMat)) {
+			Send(L"{ESC down}", 0);
+			Sleep(randInt(50, 100));
+			Send(L"{ESC up}", 0);
+		}
+		else { recover(); return; }
+		moveAndClick(623, 386, 689, 397, 1000, 2000); //click "leave game"
+		waitTillSeen(f.GAME_START_SCREEN);	
+	}
+
 };
 
 
 int main(int argn, char** argv)
 {
-	//Sleep(2000);
-	//MouseWheel(L"up", 20);
-	//return 0;
 	LPCWSTR title = L"Diablo III";
 	AutoItSetOption(L"MouseCoordMode", 2);
 
 	WinActivate(title, L"");
-	Sleep(200);
 	WinWaitActive(title, L"", 0);
 	//have to get window position so that WinMove only rescales, instead of move + rescale
 	long x = WinGetPosX(title, L"");
@@ -839,38 +924,22 @@ int main(int argn, char** argv)
 	WCHAR handleArr[33];
 	WinGetHandle(L"Diablo III", L"", handleArr, 32);
 	HWND handle = (HWND) wcstol(handleArr, NULL, 16);
-	//cout<<"starting bot"<<endl;
 	Bot myBot(handle);
-	//myBot.updateShot();
-	//myBot.saveSnapshot("mytest.png", 2000);
-	//return 0;
-	for (int i=0; i < 10; i++) {
+	//myBot.screenshot("diablo0.png",2000);
+	//myBot.screenshot("diablo1.png",2000);
+	//myBot.screenshot("diablo2.png",2000);
+	//myBot.screenshot("diablo3.png",2000);
+	//myBot.screenshot("diablo4.png",2000);
+	//myBot.screenshot("diablo5.png",2000);
+	//myBot.screenshot("diablo6.png",2000);
+	//myBot.screenshot("diablo7.png",2000);
+	//myBot.screenshot("diablo8.png",2000);
+	//myBot.screenshot("diablo9.png",2000);
+	//myBot.killGhom();
+	for (int i=0; i < 100; i++) {
+		cout<<"run "<<i<<endl;
 		myBot.killGhom();
 	}
-	//myBot.updateShot();
-	//return 0;
-	//bool m = myBot.checkMouseWheel(Rect(235,176,218,347), L"down", 14);
-	//cout << m <<endl;
-//	myBot.selectQuest(22,2);
-	//Sleep (5000);
-	//myBot.selectQuest(17);
-	//Sleep (5000);
-	//myBot.selectQuest(1);
-	//Sleep (5000);
-	//myBot.selectQuest(29);
-	//cout <<"2222222222222222222222222222222222222222222222222222222222222222222222222222222222222";
-	//Sleep(100000);
-	//return 0;
-	//int startTime2 = time(NULL);
-	//myBot.saveSnapshot("itemtest2.png", 2000);
-	//for (int i=0; i < 10; i++) {
-	//	cout << "run number " << i << endl;
-	//	myBot.killGhom();
-	//}
-	//int endTime2 = time(NULL);
-	//cout << endTime2 - startTime2 << endl;
-	//return 0;
-	//myBot.saveSnapshot("trophyquest.png", 200);
 	return 0;
 }
 
