@@ -173,7 +173,7 @@ using namespace std;
 		temp.convertTo(temp, CV_32FC3);
 		Mat result;
 		matchTemplate(floatingPoint, temp, result, CV_TM_CCOEFF_NORMED);
-		imwrite("diablo9_result.png",255*result);
+	//	imwrite("diablo9_result.png",255*result);
 	//	imshow("result", result);
 		//waitKey(0);
 		vector<Point> locs;

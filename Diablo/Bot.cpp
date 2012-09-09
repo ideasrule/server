@@ -1,3 +1,4 @@
+#include "Bot.h"
 #include <Windows.h>
 #include <assert.h>
 #include <iostream>
@@ -12,9 +13,6 @@
 #include "ItemFinder.hpp"
 using namespace std;
 using namespace cv;
-
-bool flag = false;
-
 	HMODULE autoLib = LoadLibrary("AutoItX3_x64.dll"); 
 	typedef long (WINAPI *waitPtr)(LPCWSTR, PCWSTR, long);
 	typedef void (WINAPI *handlePtr)(LPCWSTR, LPCWSTR, LPWSTR, int);
@@ -693,7 +691,8 @@ void recover() {
 		//get map coordinates for gold
 		vector<Vec2f> mapLocs;
 		for (int i=0; i < locs.size(); i++) {
-			mapLocs.push_back(convertPoint(locs[i].x, locs[i].y, IM_TO_MAP));
+			mapLocs.push_back(
+				convertPoint(locs[i].x-14, locs[i].y+11, IM_TO_MAP));
 		}
 		//initialize position to 0
 		int xpos = 0;
@@ -705,8 +704,8 @@ void recover() {
 			mapLocs.pop_back();
 			//predict position on image based on own pos, go there
 			Vec2f imPoint = convertPoint(newGold[0]-xpos, newGold[1]-ypos, MAP_TO_IM);
-			int leftx = (int) imPoint[0] - 14;
-			int topy = (int) imPoint[1] + 11;
+			int leftx = (int) imPoint[0];
+			int topy = (int) imPoint[1];
 			assert(leftx > 0 && topy > 0);
 			int waitTime = 60*(int)(getDist(imPoint[0], imPoint[1])) + 2000;
 		//		moveAndClick(leftx, topy, leftx + 12, topy + 3, 
@@ -715,10 +714,11 @@ void recover() {
 				waitTime, waitTime+200);
 			//update position
 			//I clicked leftx, topy, which represents position:
-			Vec2f mapPoint = convertPoint(leftx, topy, IM_TO_MAP);
-			xpos += mapPoint[0];
-			ypos += mapPoint[1];
-
+			//Vec2f mapPoint = convertPoint(leftx, topy, IM_TO_MAP);
+			//xpos = mapPoint[0];
+			//ypos = mapPoint[1];
+			xpos = newGold[0];
+			ypos = newGold[1];
 		}
 	}
 
@@ -851,10 +851,10 @@ void recover() {
 					waitTime, waitTime+200);
 			}
 		} while(goldLoc != NULL && getTime() - startPickTime < 20);
-		
-		//updateShot();
-		//vector<Point> allGold = f.findAllGold(*shotAsMat);
-		//collectGold(allGold);
+		/*
+		updateShot();
+		vector<Point> allGold = f.findAllGold(*shotAsMat);
+		collectGold(allGold);*/
 		Send(L"{t down}", 0);
 		Sleep(randInt(100, 160));
 		Send(L"{t up}", 0);
@@ -936,7 +936,7 @@ int main(int argn, char** argv)
 	//myBot.screenshot("diablo8.png",2000);
 	//myBot.screenshot("diablo9.png",2000);
 	//myBot.killGhom();
-	for (int i=0; i < 100; i++) {
+	for (int i=0; i < 1; i++) {
 		cout<<"run "<<i<<endl;
 		myBot.killGhom();
 	}
